@@ -8,14 +8,35 @@
   </head>
   <body>
     <main id="app" class="app" aria-label="桌面小植物">
-      <div id="bubble" class="bubble hidden" role="status" aria-live="polite"></div>
+      <section id="chatPanel" class="chat-panel hidden" aria-label="小植物聊天">
+        <button id="collapsePanelBtn" class="panel-collapse" type="button">收起</button>
+        <div class="personality-toggle" role="group" aria-label="选择植物性格">
+          <button id="healingModeBtn" class="personality-button active" type="button" data-personality="healing">治愈</button>
+          <button id="sassyModeBtn" class="personality-button" type="button" data-personality="sassy">毒舌</button>
+        </div>
+        <div id="chatHistory" class="chat-history" aria-live="polite"></div>
+        <form id="panelChatForm" class="chat-form">
+          <input id="panelChatInput" class="chat-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
+          <button id="panelChatSendBtn" class="chat-send" type="submit">发送</button>
+        </form>
+      </section>
 
-      <button id="plant" class="plant normal" type="button" aria-label="桌面小植物">
-        <span class="plant-hot-mark" aria-hidden="true">☀</span>
-        <img id="plantImage" class="plant-image hidden" alt="" draggable="false" />
-        <span id="plantEmoji" class="plant-emoji" aria-hidden="true">🌱</span>
-        <span class="plant-shadow" aria-hidden="true"></span>
-      </button>
+      <div class="pet-stack">
+        <button id="bubble" class="bubble hidden" type="button" role="status" aria-live="polite"></button>
+
+        <form id="inlineChatForm" class="input-bar hidden" aria-label="快速回复">
+          <input id="inlineChatInput" class="inline-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
+          <button id="inlineChatSendBtn" class="icon-button send-button" type="submit" aria-label="发送">➤</button>
+          <button id="expandPanelBtn" class="icon-button expand-button" type="button" aria-label="展开聊天面板">↗</button>
+        </form>
+
+        <button id="plant" class="plant normal" type="button" aria-label="桌面小植物">
+          <span class="plant-hot-mark" aria-hidden="true">☀</span>
+          <img id="plantImage" class="plant-image hidden" alt="" draggable="false" />
+          <span id="plantEmoji" class="plant-emoji" aria-hidden="true">🌱</span>
+          <span class="plant-shadow" aria-hidden="true"></span>
+        </button>
+      </div>
     </main>
 
     <script type="module" src="./renderer.js"></script>

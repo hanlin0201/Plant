@@ -4,16 +4,33 @@ const plantEl = document.querySelector("#plant");
 const plantImageEl = document.querySelector("#plantImage");
 const plantEmojiEl = document.querySelector("#plantEmoji");
 const bubbleEl = document.querySelector("#bubble");
+const inputBarEl = document.querySelector("#inlineChatForm");
+const inlineInputEl = document.querySelector("#inlineChatInput");
+const inlineSendBtnEl = document.querySelector("#inlineChatSendBtn");
+const expandPanelBtnEl = document.querySelector("#expandPanelBtn");
+const chatPanelEl = document.querySelector("#chatPanel");
+const chatHistoryEl = document.querySelector("#chatHistory");
+const panelFormEl = document.querySelector("#panelChatForm");
+const panelInputEl = document.querySelector("#panelChatInput");
+const panelSendBtnEl = document.querySelector("#panelChatSendBtn");
+const collapsePanelBtnEl = document.querySelector("#collapsePanelBtn");
+const personalityButtons = document.querySelectorAll(".personality-button");
 
 const DEVICE_ID = "sensor_001";
 const BACKEND_POLL_INTERVAL_MS = 3000;
 const CLICK_DISTANCE_PX = 5;
+const MAX_LOCAL_CHAT_HISTORY = 8;
 
 let currentState = "normal";
 let lastReadingId = null;
+let lastSensorData = null;
 let bubbleTimer = null;
 let dragState = null;
 let hasGreeted = false;
+let selectedPersonality = "healing";
+let chatHistory = [];
+let chatPending = false;
+let panelExpanded = false;
 
 // Drop your own images into assets/ later. Missing files fall back to emoji.
 const plantImageMap = {
@@ -23,7 +40,7 @@ const plantImageMap = {
   unknown: "./assets/plant-normal.png",
 };
 
-function showBubble(text) {
+function showBubble(text, options = {}) {
   if (!text) {
     return;
   }
@@ -32,9 +49,11 @@ function showBubble(text) {
   bubbleEl.textContent = text;
   bubbleEl.classList.remove("hidden");
 
-  bubbleTimer = setTimeout(() => {
-    bubbleEl.classList.add("hidden");
-  }, 3000);
+  if (!options.persist) {
+    bubbleTimer = setTimeout(() => {
+      bubbleEl.classList.add("hidden");
+    }, 3000);
+  }
 }
 
 function setPlantState(state) {
@@ -74,16 +93,16 @@ function updatePlantArt(state) {
 function showBubbleByEventType(eventType, sensorData = {}) {
   switch (eventType) {
     case "thirsty_warning":
-      showBubble("我有点渴了，可以给我浇点水吗？");
+      showBubble("我有点渴了，可以给我浇点水吗？", { persist: true });
       break;
     case "hot_warning":
-      showBubble("有点热，我想凉快一下。");
+      showBubble("有点热，我想凉快一下。", { persist: true });
       break;
     case "recovered":
-      showBubble("谢谢你，我感觉好多啦！");
+      showBubble("谢谢你，我感觉好多啦！", { persist: true });
       break;
     case "touched":
-      showBubble("你刚刚摸到我啦，我在呢。");
+      showBubble("你刚刚摸到我啦，我在呢。", { persist: true });
       break;
     case "normal_update":
       // Normal syncs are intentionally quiet so the plant does not interrupt.
@@ -103,6 +122,8 @@ async function pollPlantStatus() {
       return;
     }
 
+    lastSensorData = status.sensor_data || null;
+
     if (status.state) {
       setPlantState(status.state);
     }
@@ -114,6 +135,157 @@ async function pollPlantStatus() {
   } catch (error) {
     console.warn("[backend poll failed]", error);
   }
+}
+
+function activateInput() {
+  if (panelExpanded) {
+    return;
+  }
+
+  inputBarEl.classList.remove("hidden");
+  window.setTimeout(() => inlineInputEl.focus(), 50);
+}
+
+function deactivateInput() {
+  if (panelExpanded) {
+    return;
+  }
+
+  inputBarEl.classList.add("hidden");
+  inlineInputEl.value = "";
+}
+
+function expandToPanel() {
+  panelExpanded = true;
+  inputBarEl.classList.add("hidden");
+  renderPanelHistory();
+  chatPanelEl.classList.remove("hidden");
+  window.setTimeout(() => {
+    panelInputEl.focus();
+    scrollChatHistory();
+  }, 50);
+}
+
+function collapseToInput() {
+  panelExpanded = false;
+  chatPanelEl.classList.add("hidden");
+  activateInput();
+}
+
+function collapseChatUi() {
+  panelExpanded = false;
+  chatPanelEl.classList.add("hidden");
+  inputBarEl.classList.add("hidden");
+}
+
+function setPersonality(personality) {
+  selectedPersonality = personality === "sassy" ? "sassy" : "healing";
+
+  personalityButtons.forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.personality === selectedPersonality,
+    );
+  });
+}
+
+async function sendInlineMessage(event) {
+  event.preventDefault();
+  await sendPlantMessage({
+    inputEl: inlineInputEl,
+    source: "inline",
+  });
+}
+
+async function sendPanelMessage(event) {
+  event.preventDefault();
+  await sendPlantMessage({
+    inputEl: panelInputEl,
+    source: "panel",
+  });
+}
+
+async function sendPlantMessage({ inputEl, source }) {
+  if (chatPending) {
+    return;
+  }
+
+  const text = inputEl.value.trim();
+
+  if (!text) {
+    return;
+  }
+
+  inputEl.value = "";
+  const historyForRequest = chatHistory.slice();
+  pushChatRecord("user", text);
+  renderPanelHistory();
+  setChatPending(true);
+  showBubble("...", { persist: true });
+
+  const result = await window.plantPet?.sendChatMessage({
+    personality: selectedPersonality,
+    text,
+    history: historyForRequest,
+    sensorData: lastSensorData,
+    currentState,
+  });
+
+  setChatPending(false);
+
+  if (result?.ok) {
+    pushChatRecord("plant", result.reply);
+    showBubble(result.reply, { persist: true });
+    renderPanelHistory();
+    return;
+  }
+
+  showSystemMessage(result?.error || "连接失败，稍后再试", source);
+}
+
+function pushChatRecord(role, text) {
+  chatHistory.push({ role, text });
+  chatHistory = chatHistory.slice(-MAX_LOCAL_CHAT_HISTORY);
+}
+
+function showSystemMessage(text, source) {
+  showBubble(text, { persist: true });
+
+  if (source === "panel" || panelExpanded) {
+    appendPanelMessage("system", text);
+  }
+}
+
+function renderPanelHistory() {
+  chatHistoryEl.innerHTML = "";
+
+  chatHistory.forEach((message) => {
+    appendPanelMessage(message.role, message.text);
+  });
+
+  scrollChatHistory();
+}
+
+function appendPanelMessage(role, text) {
+  const messageEl = document.createElement("div");
+  messageEl.className = `chat-message ${role}`;
+  messageEl.textContent = text;
+  chatHistoryEl.appendChild(messageEl);
+  scrollChatHistory();
+}
+
+function scrollChatHistory() {
+  chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+}
+
+function setChatPending(isPending) {
+  chatPending = isPending;
+  inlineInputEl.disabled = isPending;
+  inlineSendBtnEl.disabled = isPending;
+  panelInputEl.disabled = isPending;
+  panelSendBtnEl.disabled = isPending;
+  inlineSendBtnEl.textContent = isPending ? "..." : "➤";
+  panelSendBtnEl.textContent = isPending ? "发送中" : "发送";
 }
 
 function getScreenPoint(event) {
@@ -128,6 +300,7 @@ function beginDrag(event) {
     return;
   }
 
+  collapseChatUi();
   dragState = {
     startX: event.screenX,
     startY: event.screenY,
@@ -159,7 +332,8 @@ function endDrag() {
   window.plantPet?.endDrag();
 
   if (!wasDrag) {
-    showBubble("我在呢。");
+    showBubble("我在呢。", { persist: true });
+    activateInput();
   }
 }
 
@@ -168,20 +342,70 @@ plantEl.addEventListener("pointermove", moveDrag);
 plantEl.addEventListener("pointerup", endDrag);
 plantEl.addEventListener("pointercancel", endDrag);
 
+bubbleEl.addEventListener("click", (event) => {
+  event.stopPropagation();
+  activateInput();
+});
+
+inputBarEl.addEventListener("submit", sendInlineMessage);
+panelFormEl.addEventListener("submit", sendPanelMessage);
+expandPanelBtnEl.addEventListener("click", expandToPanel);
+collapsePanelBtnEl.addEventListener("click", collapseToInput);
+
+inlineInputEl.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    deactivateInput();
+  }
+});
+
+panelInputEl.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    collapseToInput();
+  }
+});
+
+personalityButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setPersonality(button.dataset.personality);
+  });
+});
+
+document.addEventListener("click", (event) => {
+  const isInsideChat =
+    plantEl.contains(event.target) ||
+    bubbleEl.contains(event.target) ||
+    inputBarEl.contains(event.target) ||
+    chatPanelEl.contains(event.target);
+
+  if (!isInsideChat) {
+    collapseChatUi();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    if (panelExpanded) {
+      collapseToInput();
+    } else {
+      deactivateInput();
+    }
+  }
+});
+
 plantEl.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   window.plantPet?.openMenu();
 });
 
 plantEl.addEventListener("dblclick", () => {
-  showBubble("我先安静待一会儿。");
-  setTimeout(() => window.plantPet?.hideWindow(), 500);
+  showBubble("我先安静待一会儿。", { persist: true });
+  window.setTimeout(() => window.plantPet?.hideWindow(), 500);
 });
 
 window.plantPet?.onWindowShown(() => {
   if (!hasGreeted) {
     hasGreeted = true;
-    showBubble("你好，我会根据环境数据陪着你。");
+    showBubble("你好，我会根据环境数据陪着你。", { persist: true });
   }
 
   pollPlantStatus();
