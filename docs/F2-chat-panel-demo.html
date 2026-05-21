@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>植播 F2 聊天交互 Demo — 方案 D</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<style>
+  @keyframes breathe {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes leaf-sway {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+  @keyframes bubble-in {
+    from { opacity: 0; transform: scale(0.85) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes panel-slide-in {
+    from { opacity: 0; transform: translateX(20px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  @keyframes panel-slide-out {
+    from { opacity: 1; transform: translateX(0) scale(1); }
+    to { opacity: 0; transform: translateX(20px) scale(0.95); }
+  }
+  @keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+  }
+
+  .plant-breathe { animation: breathe 3s ease-in-out infinite; }
+  .leaf-sway { animation: leaf-sway 2.5s ease-in-out infinite; }
+  .bubble-appear { animation: bubble-in 0.3s ease-out forwards; }
+  .input-appear { animation: slide-up 0.2s ease-out forwards; }
+  .panel-enter { animation: panel-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .panel-exit { animation: panel-slide-out 0.2s ease-in forwards; }
+  .plant-eyes { animation: blink 4s ease-in-out infinite; }
+
+  .bubble-pointer::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 24px;
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+  }
+
+  .chat-scroll::-webkit-scrollbar { width: 4px; }
+  .chat-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+  .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+
+  body { overflow: hidden; user-select: none; }
+</style>
+</head>
+<body class="h-screen w-screen" style="background: linear-gradient(135deg, #e8e8e8 0%, #f0f0f0 50%, #e5e5e5 100%);">
+
+<!-- Top Info -->
+<div class="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-4">
+  <div class="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/50">
+    <h1 class="text-lg font-bold text-gray-700 text-center">植播 · F2 聊天交互 Demo</h1>
+    <p class="text-xs text-gray-400 text-center mt-1">方案 D（A + B 混合）：点击植物开始互动，点「展开」进入深聊模式</p>
+  </div>
+</div>
+
+<!-- Desktop icons (decorative) -->
+<div class="absolute top-6 left-6 flex flex-col gap-4 opacity-30">
+  <div class="flex flex-col items-center gap-1">
+    <div class="w-12 h-12 bg-blue-400 rounded-lg flex items-center justify-center text-white text-xl"><i class="fa fa-folder"></i></div>
+    <span class="text-xs text-gray-500">文档</span>
+  </div>
+  <div class="flex flex-col items-center gap-1">
+    <div class="w-12 h-12 bg-green-400 rounded-lg flex items-center justify-center text-white text-xl"><i class="fa fa-image"></i></div>
+    <span class="text-xs text-gray-500">图片</span>
+  </div>
+  <div class="flex flex-col items-center gap-1">
+    <div class="w-12 h-12 bg-purple-400 rounded-lg flex items-center justify-center text-white text-xl"><i class="fa fa-music"></i></div>
+    <span class="text-xs text-gray-500">音乐</span>
+  </div>
+</div>
+
+<!-- Taskbar (decorative) -->
+<div class="absolute bottom-0 left-0 right-0 h-12 bg-gray-800/80 backdrop-blur-md flex items-center px-4 z-10">
+  <div class="flex gap-2 items-center">
+    <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-xs"><i class="fa fa-windows"></i></div>
+    <div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-white text-xs"><i class="fa fa-chrome"></i></div>
+    <div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-white text-xs"><i class="fa fa-file-text-o"></i></div>
+  </div>
+  <div class="ml-auto text-white/60 text-xs"><span id="clock"></span></div>
+</div>
+
+<!-- ==================== Plant Character ==================== -->
+<div id="plantArea" class="absolute z-40" style="bottom: 80px; right: 100px;">
+
+  <!-- Bubble -->
+  <div id="bubble" class="bubble-pointer bg-white rounded-2xl px-4 py-3 shadow-lg mb-2 max-w-[220px] cursor-pointer bubble-appear relative" onclick="activateInput()">
+    <p id="bubbleText" class="text-sm text-gray-600 leading-relaxed">今天阳光照到我叶子上了，暖暖的...</p>
+  </div>
+
+  <!-- Inline input with expand button -->
+  <div id="inputBar" class="hidden mb-2 input-appear">
+    <div class="bg-white rounded-xl shadow-lg p-2 flex gap-2 items-center border border-green-200">
+      <input id="inputField" type="text" placeholder="和小绿说点什么..."
+        class="flex-1 text-sm px-3 py-2 rounded-lg bg-gray-50 outline-none focus:bg-white transition-colors"
+        onkeydown="if(event.key==='Enter')sendInline()" onkeyup="if(event.key==='Escape')deactivateInput()">
+      <button onclick="sendInline()" class="w-8 h-8 bg-green-400 hover:bg-green-500 rounded-lg flex items-center justify-center text-white transition-colors" title="发送">
+        <i class="fa fa-paper-plane text-xs"></i>
+      </button>
+      <button onclick="expandToPanel()" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 transition-colors" title="展开聊天面板">
+        <i class="fa fa-expand text-xs"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- The Plant -->
+  <div id="plantBody" class="plant-breathe flex flex-col items-center cursor-pointer" onclick="activateInput()">
+    <svg width="80" height="90" viewBox="0 0 80 90" class="drop-shadow-lg">
+      <path d="M20 55 L60 55 L55 85 Q40 90 25 85 Z" fill="#D2691E" />
+      <path d="M15 50 L65 50 L62 58 L18 58 Z" fill="#CD853F" rx="3" />
+      <ellipse cx="40" cy="50" rx="26" ry="4" fill="#DEB887" />
+      <ellipse cx="40" cy="55" rx="20" ry="3" fill="#5D4037" />
+      <rect x="38" y="25" width="4" height="32" rx="2" fill="#4CAF50" />
+      <g class="leaf-sway" style="transform-origin: 40px 35px;">
+        <ellipse cx="28" cy="30" rx="14" ry="7" fill="#66BB6A" transform="rotate(-30 28 30)" />
+        <ellipse cx="52" cy="28" rx="14" ry="7" fill="#81C784" transform="rotate(25 52 28)" />
+        <ellipse cx="36" cy="18" rx="11" ry="6" fill="#A5D6A7" transform="rotate(-10 36 18)" />
+        <ellipse cx="48" cy="15" rx="10" ry="5" fill="#81C784" transform="rotate(15 48 15)" />
+      </g>
+      <g class="plant-eyes">
+        <circle cx="34" cy="40" r="2.5" fill="#333" />
+        <circle cx="46" cy="40" r="2.5" fill="#333" />
+      </g>
+      <path d="M36 45 Q40 48 44 45" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round" />
+      <circle cx="28" cy="44" r="4" fill="#FFCDD2" opacity="0.5" />
+      <circle cx="52" cy="44" r="4" fill="#FFCDD2" opacity="0.5" />
+    </svg>
+    <span class="text-xs text-gray-500 mt-1 bg-white/60 px-2 py-0.5 rounded-full">小绿</span>
+  </div>
+</div>
+
+<!-- ==================== Expanded Panel ==================== -->
+<div id="panel" class="hidden absolute z-50" style="bottom: 80px; right: 200px;">
+  <div class="w-[280px] h-[400px] bg-white/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 flex flex-col overflow-hidden panel-enter">
+    <!-- Collapse button -->
+    <div class="flex items-center justify-between px-4 pt-3 pb-1">
+      <span class="text-xs text-gray-400">和小绿聊天</span>
+      <button onclick="collapseToInput()" class="text-gray-400 hover:text-gray-600 transition-colors text-xs flex items-center gap-1" title="收起为输入条">
+        <i class="fa fa-compress"></i> 收起
+      </button>
+    </div>
+    <div id="chatHistory" class="flex-1 overflow-y-auto chat-scroll px-4 pb-2 flex flex-col gap-3">
+    </div>
+    <div class="p-3 border-t border-gray-100/50">
+      <div class="flex gap-2 items-center">
+        <input id="inputPanel" type="text" placeholder="和小绿说点什么..."
+          class="flex-1 text-sm px-3 py-2 rounded-xl bg-white/80 outline-none focus:bg-white transition-colors border border-gray-100"
+          onkeydown="if(event.key==='Enter')sendPanel()" onkeyup="if(event.key==='Escape')collapseToInput()">
+        <button onclick="sendPanel()" class="w-8 h-8 bg-green-400 hover:bg-green-500 rounded-xl flex items-center justify-center text-white transition-colors flex-shrink-0">
+          <i class="fa fa-paper-plane text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let expanded = false;
+let chatRecords = [];
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.getFullYear() + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// Plant response logic
+function getResponse(text) {
+  if (/累|疲|倦/.test(text)) return '嗯...辛苦了。我在呢。';
+  if (/烦|焦|压力|难受|不开心|伤心|哭/.test(text)) return '...抱抱你。你已经很努力了。';
+  if (/天气|阳光|太阳|晴/.test(text)) return '对呀...我能感受到，暖暖的。';
+  if (/你好|嗨|hi|hello|哈喽/i.test(text)) return '嗯...你来啦。';
+  if (/好看|漂亮|可爱/.test(text)) return '谢谢...我会好好长大的。';
+  if (/晚安|睡/.test(text)) return '嗯...晚安，明天见。';
+  if (/早|起床|早上好/.test(text)) return '早呀...新的一天，一起加油。';
+  if (/水|渴|浇/.test(text)) return '嗯...刚量了一下，水分还够的。';
+  if (/怎么样|好不好|还好吗/.test(text)) return '我挺好的...今天阳光刚刚好。';
+  return '嗯...我在呢。';
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ==================== Inline Input (Mode A part) ====================
+function activateInput() {
+  if (expanded) return;
+  const bar = document.getElementById('inputBar');
+  bar.classList.remove('hidden');
+  bar.classList.add('input-appear');
+  setTimeout(() => document.getElementById('inputField').focus(), 50);
+}
+
+function deactivateInput() {
+  if (expanded) return;
+  document.getElementById('inputBar').classList.add('hidden');
+  document.getElementById('inputField').value = '';
+}
+
+function sendInline() {
+  const input = document.getElementById('inputField');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  chatRecords.push({ role: 'user', text });
+  const response = getResponse(text);
+
+  const bubbleText = document.getElementById('bubbleText');
+  const bubble = document.getElementById('bubble');
+  bubbleText.textContent = '...';
+  bubble.classList.remove('bubble-appear'); void bubble.offsetWidth; bubble.classList.add('bubble-appear');
+
+  setTimeout(() => {
+    chatRecords.push({ role: 'plant', text: response });
+    bubbleText.textContent = response;
+    bubble.classList.remove('bubble-appear'); void bubble.offsetWidth; bubble.classList.add('bubble-appear');
+  }, 600);
+}
+
+// ==================== Expanded Panel (Mode B part) ====================
+function expandToPanel() {
+  expanded = true;
+  document.getElementById('inputBar').classList.add('hidden');
+  renderPanelHistory();
+  const panel = document.getElementById('panel');
+  panel.classList.remove('hidden');
+  const inner = panel.querySelector('div');
+  inner.classList.remove('panel-exit'); inner.classList.add('panel-enter');
+  setTimeout(() => { document.getElementById('inputPanel').focus(); scrollChat(); }, 50);
+}
+
+function collapseToInput() {
+  expanded = false;
+  const panel = document.getElementById('panel');
+  const inner = panel.querySelector('div');
+  inner.classList.remove('panel-enter'); inner.classList.add('panel-exit');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+    activateInput();
+  }, 200);
+}
+
+function renderPanelHistory() {
+  const chat = document.getElementById('chatHistory');
+  chat.innerHTML = '';
+  appendChatBubble(chat, '今天阳光照到我叶子上了，暖暖的...', false);
+  chatRecords.forEach(msg => {
+    appendChatBubble(chat, msg.text, msg.role === 'user');
+  });
+}
+
+function sendPanel() {
+  const input = document.getElementById('inputPanel');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  chatRecords.push({ role: 'user', text });
+  const chat = document.getElementById('chatHistory');
+  appendChatBubble(chat, text, true);
+
+  const response = getResponse(text);
+  setTimeout(() => {
+    chatRecords.push({ role: 'plant', text: response });
+    appendChatBubble(chat, response, false);
+    document.getElementById('bubbleText').textContent = response;
+  }, 800);
+}
+
+// ==================== Helpers ====================
+function scrollChat() {
+  const el = document.getElementById('chatHistory');
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendChatBubble(container, text, isUser) {
+  const div = document.createElement('div');
+  div.className = isUser ? 'flex justify-end' : 'flex justify-start';
+  if (isUser) {
+    div.innerHTML = `<div class="bg-blue-50 rounded-2xl rounded-br-sm px-3 py-2 max-w-[200px]"><p class="text-sm text-gray-600">${escapeHtml(text)}</p></div>`;
+  } else {
+    div.innerHTML = `<div class="bg-green-50 rounded-2xl rounded-bl-sm px-3 py-2 max-w-[200px]"><p class="text-sm text-gray-600">${escapeHtml(text)}</p><span class="text-[10px] text-gray-300 mt-1 block">小绿</span></div>`;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ==================== Global events ====================
+document.addEventListener('click', (e) => {
+  const plantArea = document.getElementById('plantArea');
+  const panelEl = document.getElementById('panel');
+  const isInside = plantArea.contains(e.target) || panelEl.contains(e.target);
+
+  if (!isInside) {
+    if (expanded) collapseToInput();
+    else deactivateInput();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (expanded) collapseToInput();
+    else deactivateInput();
+  }
+});
+</script>
+
+</body>
+</html>

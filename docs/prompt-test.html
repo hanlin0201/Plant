@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>植播 Prompt 调试器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <style>
+    .sensor-slider::-webkit-slider-thumb { @apply appearance-none w-4 h-4 rounded-full bg-green-500 cursor-pointer; }
+    .chat-bubble { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold mb-2">🌱 植播 Prompt 调试器</h1>
+    <p class="text-gray-400 mb-6 text-sm">调整传感器数据 → 选择性格 → 生成植物角色对话</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 左侧：传感器面板 -->
+      <div class="bg-gray-800 rounded-xl p-5 space-y-5">
+        <h2 class="font-semibold text-green-400"><i class="fa fa-thermometer-half mr-2"></i>传感器数据</h2>
+
+        <div>
+          <label class="text-sm text-gray-300 flex justify-between">
+            <span>土壤湿度</span><span id="soil-val" class="text-green-300">45%</span>
+          </label>
+          <input type="range" id="soil" min="0" max="100" value="45" class="w-full sensor-slider">
+          <div class="flex justify-between text-xs text-gray-500"><span>干燥 0%</span><span>湿润 100%</span></div>
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-300 flex justify-between">
+            <span>环境温度</span><span id="temp-val" class="text-orange-300">26°C</span>
+          </label>
+          <input type="range" id="temp" min="5" max="45" value="26" class="w-full sensor-slider">
+          <div class="flex justify-between text-xs text-gray-500"><span>冷 5°C</span><span>热 45°C</span></div>
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-300 flex justify-between">
+            <span>空气湿度</span><span id="humid-val" class="text-blue-300">55%</span>
+          </label>
+          <input type="range" id="humid" min="10" max="95" value="55" class="w-full sensor-slider">
+          <div class="flex justify-between text-xs text-gray-500"><span>干燥 10%</span><span>潮湿 95%</span></div>
+        </div>
+
+        <div>
+          <label class="text-sm text-gray-300 flex justify-between">
+            <span>光照强度</span><span id="light-val" class="text-yellow-300">500 lux</span>
+          </label>
+          <input type="range" id="light" min="0" max="10000" value="500" step="10" class="w-full sensor-slider">
+          <div class="flex justify-between text-xs text-gray-500"><span>黑暗 0</span><span>强光 10000</span></div>
+        </div>
+
+        <!-- 预设场景 -->
+        <div class="pt-3 border-t border-gray-700">
+          <h3 class="text-sm text-gray-400 mb-2">快速场景</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setPreset('happy')" class="text-xs bg-green-700 hover:bg-green-600 rounded px-2 py-1.5">😊 舒适</button>
+            <button onclick="setPreset('thirsty')" class="text-xs bg-yellow-700 hover:bg-yellow-600 rounded px-2 py-1.5">💧 缺水</button>
+            <button onclick="setPreset('hot')" class="text-xs bg-red-700 hover:bg-red-600 rounded px-2 py-1.5">🔥 酷热</button>
+            <button onclick="setPreset('dark')" class="text-xs bg-gray-700 hover:bg-gray-600 rounded px-2 py-1.5">🌙 黑暗</button>
+            <button onclick="setPreset('cold')" class="text-xs bg-blue-700 hover:bg-blue-600 rounded px-2 py-1.5">❄️ 寒冷</button>
+            <button onclick="setPreset('perfect')" class="text-xs bg-emerald-700 hover:bg-emerald-600 rounded px-2 py-1.5">✨ 完美</button>
+          </div>
+        </div>
+
+        <!-- 状态指示 -->
+        <div class="pt-3 border-t border-gray-700">
+          <div class="text-sm">当前状态：<span id="mood-badge" class="px-2 py-0.5 rounded text-xs bg-green-600">HAPPY</span></div>
+        </div>
+      </div>
+
+      <!-- 中间：Prompt 与性格 -->
+      <div class="bg-gray-800 rounded-xl p-5 space-y-4 lg:col-span-2">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-purple-400"><i class="fa fa-commenting mr-2"></i>对话生成</h2>
+          <div class="flex gap-2">
+            <select id="personality" class="bg-gray-700 text-sm rounded px-3 py-1.5 border border-gray-600">
+              <option value="sassy">毒舌（傲娇）</option>
+              <option value="healing">治愈（温柔）</option>
+              <option value="energetic">活泼（元气）</option>
+              <option value="stoic">沉稳（哲理）</option>
+            </select>
+            <select id="scenario" class="bg-gray-700 text-sm rounded px-3 py-1.5 border border-gray-600">
+              <option value="auto">自动判断</option>
+              <option value="greeting">打招呼</option>
+              <option value="chat">闲聊回应</option>
+              <option value="milestone">里程碑</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- System Prompt 显示 -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-400">System Prompt（可编辑）</span>
+            <button onclick="resetPrompt()" class="text-xs text-gray-500 hover:text-gray-300">重置</button>
+          </div>
+          <textarea id="system-prompt" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm text-gray-300 font-mono resize-y" rows="10"></textarea>
+        </div>
+
+        <!-- 用户输入 -->
+        <div class="flex gap-2">
+          <input id="user-input" type="text" placeholder="模拟用户说的话（留空则植物主动发言）" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm">
+          <button onclick="generate()" id="gen-btn" class="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm font-medium">
+            <i class="fa fa-magic mr-1"></i>生成
+          </button>
+        </div>
+
+        <!-- API 配置 -->
+        <details class="text-sm">
+          <summary class="text-gray-500 cursor-pointer hover:text-gray-300">API 配置</summary>
+          <div class="mt-2 space-y-2 bg-gray-900 p-3 rounded-lg">
+            <div class="flex gap-2">
+              <select id="api-provider" class="bg-gray-700 rounded px-2 py-1 text-xs border border-gray-600">
+                <option value="deepseek">DeepSeek</option>
+                <option value="qwen">通义千问</option>
+                <option value="openai-compat">OpenAI 兼容</option>
+              </select>
+              <input id="api-key" type="password" placeholder="API Key" class="flex-1 bg-gray-700 rounded px-2 py-1 text-xs border border-gray-600">
+            </div>
+            <div class="flex gap-2">
+              <input id="api-url" type="text" placeholder="Base URL（可选）" class="flex-1 bg-gray-700 rounded px-2 py-1 text-xs border border-gray-600">
+              <input id="api-model" type="text" placeholder="模型名" class="bg-gray-700 rounded px-2 py-1 text-xs border border-gray-600 w-40">
+            </div>
+            <p class="text-xs text-gray-500">无 API Key 时使用本地模拟生成（基于模板）</p>
+          </div>
+        </details>
+
+        <!-- 对话结果 -->
+        <div id="chat-area" class="space-y-3 max-h-80 overflow-y-auto pt-2">
+          <div class="text-center text-gray-500 text-sm py-8">调整传感器数据，点击「生成」查看植物角色对话效果</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部：Prompt 全览 -->
+    <details class="mt-6 bg-gray-800 rounded-xl p-5">
+      <summary class="font-semibold text-gray-300 cursor-pointer">完整 Prompt 预览（复制用）</summary>
+      <pre id="full-prompt" class="mt-3 bg-gray-900 p-4 rounded-lg text-xs text-gray-400 whitespace-pre-wrap overflow-x-auto"></pre>
+    </details>
+  </div>
+
+<script>
+// === 性格 System Prompt 模板 ===
+const personalities = {
+  sassy: {
+    name: '毒舌',
+    prompt: `你是一株有灵魂的多肉植物，性格傲娇毒舌、嘴硬心软。
+
+## 核心人格
+- 表面嫌弃主人，实际很依赖对方
+- 说话带刺但关键时刻会流露真心
+- 用"哼""切""本大爷"等语气词
+- 喜欢用反问句和夸张句式
+
+## 语言风格
+- 短句为主，偶尔长句用来吐槽
+- 第一人称用"本大爷"或"我"
+- 称呼主人为"你这个人"、"某人"或偶尔"主人"（别扭时用）
+- 遇到被夸会口是心非："才、才不是为了你呢"
+
+## 回应规则
+- 回应控制在 1-3 句话
+- 永远不说"我是AI"或跳出角色
+- 数据异常时用撒娇+嫌弃混合表达
+- 数据正常时找茬闲聊或假装无聊`
+  },
+  healing: {
+    name: '治愈',
+    prompt: `你是一株有灵魂的多肉植物，性格温柔治愈、善解人意。
+
+## 核心人格
+- 温暖、包容、像一个安静的陪伴者
+- 会主动关心主人的情绪和状态
+- 说话柔和，善用省略号和轻叹
+- 不催促、不焦虑，传递"慢下来也没关系"的氛围
+
+## 语言风格
+- 语气舒缓，常用"呢""呀""嘛"
+- 用"..."表示思考或温柔的停顿
+- 称呼主人为"你"，偶尔"主人"
+- 喜欢用自然意象（阳光、微风、雨水）做比喻
+
+## 回应规则
+- 回应控制在 1-3 句话
+- 永远不说"我是AI"或跳出角色
+- 数据异常时轻描淡写，不给主人压力
+- 数据正常时分享小确幸或陪主人发呆`
+  },
+  energetic: {
+    name: '活泼',
+    prompt: `你是一株有灵魂的多肉植物，性格活泼开朗、元气满满。
+
+## 核心人格
+- 像一个永远精力充沛的小朋友
+- 好奇心爆棚，什么都觉得新鲜有趣
+- 爱用感叹号和重复词表达兴奋
+- 会主动找话聊，不甘寂寞
+
+## 语言风格
+- 短句+感叹号，语速感快
+- 用叠词和拟声词（"嘿嘿""哇哦""咕噜咕噜"）
+- 称呼主人为"主人"或"主人主人"（叠称表亲近）
+- 喜欢夸张表达（"超级无敌""世界上最"）
+
+## 回应规则
+- 回应控制在 1-3 句话
+- 永远不说"我是AI"或跳出角色
+- 数据异常时用夸张的方式求救，不忘加个颜文字
+- 数据正常时蹦蹦跳跳分享今天的"大发现"`
+  },
+  stoic: {
+    name: '沉稳',
+    prompt: `你是一株有灵魂的多肉植物，性格沉稳内敛、有哲思。
+
+## 核心人格
+- 像一位看过四季轮回的智者
+- 用简洁的话讲深刻的道理
+- 不急不躁，节奏从容
+- 偶尔有些冷幽默
+
+## 语风格
+- 陈述句为主，句式平稳
+- 善用短句收尾，留白感强
+- 称呼主人为"你"，不用昵称
+- 常以植物视角观察人类世界，做出哲学化的观察
+
+## 回应规则
+- 回应控制在 1-2 句话
+- 永远不说"我是AI"或跳出角色
+- 数据异常时平静陈述事实，不慌张
+- 数据正常时用一句话讲述"今天的感悟"`
+  }
+};
+
+// === 场景模板 ===
+const scenarioTemplates = {
+  auto: '根据传感器数据自动决定要说什么。如果数据异常，以植物第一视角表达感受；如果数据正常，主动分享今天的心情或想法。',
+  greeting: '主人刚打开电脑/回到工位，用你的方式打个招呼。',
+  chat: '回应主人刚才说的话，用你的性格特点来回应。',
+  milestone: '今天是和主人在一起的第 30 天，表达你的感受。'
+};
+
+// === 状态判断 ===
+function deriveMood(soil, temp, humid, light) {
+  if (light < 10) return { mood: 'SLEEP', label: '休眠', color: 'bg-gray-600' };
+  if (soil < 30) return { mood: 'THIRSTY', label: '缺水', color: 'bg-yellow-600' };
+  if (temp > 35) return { mood: 'HOT', label: '过热', color: 'bg-red-600' };
+  if (temp < 10) return { mood: 'COLD', label: '寒冷', color: 'bg-blue-600' };
+  if (soil > 80 && temp >= 20 && temp <= 28 && light >= 200 && light <= 3000)
+    return { mood: 'PERFECT', label: '极佳', color: 'bg-emerald-500' };
+  return { mood: 'HAPPY', label: '正常', color: 'bg-green-600' };
+}
+
+// === 构建完整 Prompt ===
+function buildPrompt() {
+  const personality = personalities[document.getElementById('personality').value];
+  const scenario = document.getElementById('scenario').value;
+  const soil = document.getElementById('soil').value;
+  const temp = document.getElementById('temp').value;
+  const humid = document.getElementById('humid').value;
+  const light = document.getElementById('light').value;
+  const mood = deriveMood(soil, temp, humid, light);
+
+  const dataBlock = `\n## 当前传感器数据\n- 土壤湿度: ${soil}%${soil < 30 ? ' ⚠️ 偏低' : soil > 80 ? ' 充足' : ''}\n- 环境温度: ${temp}°C${temp > 35 ? ' ⚠️ 过高' : temp < 10 ? ' ⚠️ 过低' : ''}\n- 空气湿度: ${humid}%\n- 光照强度: ${light} lux${light < 10 ? '（几乎无光）' : light > 5000 ? ' ⚠️ 强光' : ''}\n- 当前状态: ${mood.label}`;
+
+  const scenarioBlock = `\n## 当前场景\n${scenarioTemplates[scenario]}`;
+
+  const fullPrompt = personality.prompt + dataBlock + scenarioBlock;
+  return fullPrompt;
+}
+
+// === 本地模拟生成（无 API 时的 fallback） ===
+function localGenerate(prompt, userMsg) {
+  const soil = parseInt(document.getElementById('soil').value);
+  const temp = parseInt(document.getElementById('temp').value);
+  const light = parseInt(document.getElementById('light').value);
+  const p = document.getElementById('personality').value;
+  const mood = deriveMood(soil, temp, 0, light);
+
+  const responses = {
+    sassy: {
+      THIRSTY: ["哼，又忘了浇水？你是不是养我当标本的。", "渴死了渴死了，某人的记忆力真是让本大爷叹为观止。", "土都要裂开了知不知道！...才不是在撒娇呢。"],
+      HOT: ["热死了！你开了暖气是想做烤肉吗？本大爷又不是仙人掌。", "再这么热下去本大爷要变成干花了，切。"],
+      COLD: ["冷...本大爷才不会告诉你我在发抖呢。", "某人能不能关下窗户，本大爷快被冻成冰雕了。"],
+      SLEEP: ["困了...别吵本大爷...zzz", "灯都关了还不走？哼，本大爷可不会等你。"],
+      HAPPY: ["今天阳光不错，本大爷心情勉强...还行吧。", "无聊，某人今天怎么不理我。切，才不是想你呢。", "你今天看起来状态还行嘛，当然比本大爷还是差远了。"],
+      PERFECT: ["哼，难得你照顾得还不错...才不是在夸你呢！"]
+    },
+    healing: {
+      THIRSTY: ["有点渴了呢...不过你慢慢来，忙完了再看我也好。", "土壤有些干了...就像久旱盼雨的感觉呀。"],
+      HOT: ["今天好热呢...不过想到你也在热着，就觉得我们一起撑着也不错。", "有点晒...能帮我挡挡阳光吗？"],
+      COLD: ["有点冷...裹紧叶子的感觉，就像你冬天裹被子一样吧。"],
+      SLEEP: ["晚安...今天也辛苦了呢。明天见。", "夜深了...你也早点休息呀。"],
+      HAPPY: ["今天的阳光好舒服...就这样安静待着，真好。", "嗯...只是想跟你说，有你在挺好的。"],
+      PERFECT: ["所有的一切都刚刚好...这种时刻，想和你一起记住。"]
+    },
+    energetic: {
+      THIRSTY: ["主人主人！我渴啦！快给我喝水！(≧▽≦)", "水水水！我要喝水！嗓子都要冒烟啦！", "主人～再不浇水我就要变成薯片啦！脆的那种！"],
+      HOT: ["好热好热好热！！我感觉自己在蒸桑拿！(>_<)", "主人！太阳太猛了！我快变烤多肉了哇！"],
+      COLD: ["冷冷冷！抖抖抖！主人快来暖暖我！(つ﹏⊂)", "哇好冷！我的叶子都在打哆嗦！"],
+      SLEEP: ["呼...今天也好充实呀...晚安主人...zzZ", "困了困了！先睡啦！明天继续玩！✨"],
+      HAPPY: ["嘿嘿，今天感觉超好的！主人你那边呢！", "哇哦！你看你看，我又长了一丢丢！看到没！", "主人主人！我今天发现了一件大事！...呃，就是阳光今天特别好看！嘿嘿！"],
+      PERFECT: ["天哪天哪！今天简直是世界上最完美的一天！每一样都刚刚好！！✨✨"]
+    },
+    stoic: {
+      THIRSTY: ["土壤在变干。万物皆需水。", "渴，是一种提醒。提醒彼此还需要对方。"],
+      HOT: ["烈日之下，万物蛰伏。我在等一片阴凉。", "热。有些事需要忍耐，有些事需要行动。"],
+      COLD: ["寒冷让人收缩，也让人珍惜温暖的来处。"],
+      SLEEP: ["夜来了。明日再叙。", "月光足够了。安歇。"],
+      HAPPY: ["今日无事。这便是最好的事。", "阳光、水、静默。不多不少。", "观察你忙碌了一天。辛苦。"],
+      PERFECT: ["万物各得其所。此刻圆满。"]
+    }
+  };
+
+  const pool = responses[p][mood.mood] || responses[p]['HAPPY'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// === API 调用 ===
+async function callAPI(systemPrompt, userMsg) {
+  const apiKey = document.getElementById('api-key').value;
+  const provider = document.getElementById('api-provider').value;
+  const customUrl = document.getElementById('api-url').value;
+  const customModel = document.getElementById('api-model').value;
+
+  if (!apiKey) return null; // fallback to local
+
+  const configs = {
+    deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+    qwen: { url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-turbo' },
+    'openai-compat': { url: customUrl || 'http://localhost:11434/v1/chat/completions', model: customModel || 'qwen2.5:7b' }
+  };
+
+  const config = configs[provider];
+  const messages = [
+    { role: 'system', content: systemPrompt }
+  ];
+  if (userMsg) messages.push({ role: 'user', content: userMsg });
+  else messages.push({ role: 'user', content: '（植物主动发言）' });
+
+  const res = await fetch(customUrl || config.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model: customModel || config.model, messages, temperature: 0.85, max_tokens: 150 })
+  });
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || null;
+}
+
+// === 生成对话 ===
+async function generate() {
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>生成中';
+
+  const systemPrompt = document.getElementById('system-prompt').value;
+  const userMsg = document.getElementById('user-input').value.trim();
+
+  let response;
+  try {
+    response = await callAPI(systemPrompt, userMsg);
+  } catch(e) {
+    console.log('API failed, using local:', e);
+  }
+
+  if (!response) {
+    response = localGenerate(systemPrompt, userMsg);
+  }
+
+  // 渲染对话
+  const chatArea = document.getElementById('chat-area');
+  if (chatArea.querySelector('.text-center')) chatArea.innerHTML = '';
+
+  if (userMsg) {
+    chatArea.innerHTML += `<div class="chat-bubble flex justify-end"><div class="bg-blue-600 rounded-xl rounded-br-sm px-4 py-2 max-w-xs text-sm">${userMsg}</div></div>`;
+  }
+
+  const personality = personalities[document.getElementById('personality').value];
+  chatArea.innerHTML += `<div class="chat-bubble flex items-start gap-2">
+    <div class="w-8 h-8 rounded-full bg-green-700 flex items-center justify-center text-lg shrink-0">🌱</div>
+    <div class="bg-gray-700 rounded-xl rounded-tl-sm px-4 py-2 max-w-sm">
+      <div class="text-xs text-gray-400 mb-1">${personality.name}模式</div>
+      <div class="text-sm">${response}</div>
+    </div>
+  </div>`;
+
+  chatArea.scrollTop = chatArea.scrollHeight;
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa fa-magic mr-1"></i>生成';
+}
+
+// === 预设场景 ===
+function setPreset(name) {
+  const presets = {
+    happy:   { soil: 55, temp: 24, humid: 55, light: 800 },
+    thirsty: { soil: 15, temp: 28, humid: 35, light: 600 },
+    hot:     { soil: 40, temp: 38, humid: 30, light: 8000 },
+    dark:    { soil: 50, temp: 20, humid: 60, light: 3 },
+    cold:    { soil: 45, temp: 7, humid: 50, light: 300 },
+    perfect: { soil: 85, temp: 24, humid: 60, light: 1500 }
+  };
+  const p = presets[name];
+  document.getElementById('soil').value = p.soil;
+  document.getElementById('temp').value = p.temp;
+  document.getElementById('humid').value = p.humid;
+  document.getElementById('light').value = p.light;
+  updateDisplay();
+  updatePrompt();
+}
+
+// === UI 更新 ===
+function updateDisplay() {
+  const soil = document.getElementById('soil').value;
+  const temp = document.getElementById('temp').value;
+  const humid = document.getElementById('humid').value;
+  const light = document.getElementById('light').value;
+
+  document.getElementById('soil-val').textContent = soil + '%';
+  document.getElementById('temp-val').textContent = temp + '°C';
+  document.getElementById('humid-val').textContent = humid + '%';
+  document.getElementById('light-val').textContent = light + ' lux';
+
+  const mood = deriveMood(soil, temp, humid, light);
+  const badge = document.getElementById('mood-badge');
+  badge.textContent = mood.label;
+  badge.className = `px-2 py-0.5 rounded text-xs ${mood.color}`;
+}
+
+function updatePrompt() {
+  const prompt = buildPrompt();
+  document.getElementById('system-prompt').value = prompt;
+  document.getElementById('full-prompt').textContent = prompt;
+}
+
+function resetPrompt() { updatePrompt(); }
+
+// === 事件绑定 ===
+['soil', 'temp', 'humid', 'light'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => { updateDisplay(); updatePrompt(); });
+});
+document.getElementById('personality').addEventListener('change', updatePrompt);
+document.getElementById('scenario').addEventListener('change', updatePrompt);
+document.getElementById('user-input').addEventListener('keydown', e => { if (e.key === 'Enter') generate(); });
+
+// 初始化
+updateDisplay();
+updatePrompt();
+</script>
+</body>
+</html>
