@@ -1,0 +1,223 @@
+:root {
+  color-scheme: light;
+  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+  --bubble: rgba(255, 255, 255, 0.94);
+  --bubble-border: rgba(49, 81, 58, 0.16);
+  --text: #213528;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+}
+
+body {
+  -webkit-app-region: no-drag;
+}
+
+button {
+  font: inherit;
+}
+
+.app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: end center;
+  padding: 18px 10px 12px;
+  background: transparent;
+}
+
+.bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 145px;
+  width: max-content;
+  max-width: 188px;
+  transform: translateX(-50%);
+  padding: 9px 12px;
+  border: 1px solid var(--bubble-border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--bubble);
+  box-shadow: 0 10px 28px rgba(26, 45, 31, 0.16);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid var(--bubble-border);
+  border-bottom: 1px solid var(--bubble-border);
+  background: var(--bubble);
+}
+
+.bubble.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+
+.plant {
+  position: relative;
+  width: 138px;
+  height: 138px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 74%, rgba(139, 94, 52, 0.24) 0 22%, transparent 23%),
+    radial-gradient(circle at 50% 56%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 60%);
+  cursor: grab;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+
+.plant:active {
+  cursor: grabbing;
+}
+
+.plant:focus-visible {
+  box-shadow: 0 0 0 3px rgba(40, 180, 99, 0.34);
+}
+
+.plant-image,
+.plant-emoji {
+  position: relative;
+  z-index: 1;
+  display: block;
+  transform-origin: 50% 86%;
+  pointer-events: none;
+}
+
+.plant-image {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 12px rgba(23, 47, 31, 0.22));
+}
+
+.plant-emoji {
+  font-size: 78px;
+  line-height: 1;
+  filter: drop-shadow(0 10px 12px rgba(23, 47, 31, 0.22));
+}
+
+.plant-shadow {
+  position: absolute;
+  left: 31px;
+  right: 31px;
+  bottom: 17px;
+  height: 13px;
+  border-radius: 999px;
+  background: rgba(34, 48, 37, 0.18);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.plant-hot-mark {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 2;
+  color: #f08a24;
+  font-size: 20px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 140ms ease, transform 140ms ease;
+  pointer-events: none;
+}
+
+.hidden {
+  display: none;
+}
+
+.plant.normal .plant-image,
+.plant.normal .plant-emoji {
+  animation: breathe 2.6s ease-in-out infinite;
+}
+
+.plant.thirsty .plant-image,
+.plant.thirsty .plant-emoji {
+  animation: wilt 2.8s ease-in-out infinite;
+  filter: grayscale(0.25) drop-shadow(0 8px 9px rgba(23, 47, 31, 0.16));
+}
+
+.plant.hot .plant-image,
+.plant.hot .plant-emoji {
+  animation: hotShake 0.48s linear infinite;
+}
+
+.plant.hot .plant-hot-mark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.plant.idle .plant-image,
+.plant.idle .plant-emoji {
+  animation: idleRest 4s ease-in-out infinite;
+  opacity: 0.9;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.06);
+  }
+}
+
+@keyframes wilt {
+  0%,
+  100% {
+    transform: rotate(-7deg) translateY(8px) scale(0.92);
+  }
+  50% {
+    transform: rotate(-3deg) translateY(4px) scale(0.96);
+  }
+}
+
+@keyframes hotShake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+@keyframes idleRest {
+  0%,
+  100% {
+    transform: translateY(2px) scale(0.96);
+  }
+  50% {
+    transform: translateY(0) scale(0.98);
+  }
+}

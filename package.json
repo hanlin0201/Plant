@@ -1,0 +1,46 @@
+{
+  "name": "desktop-plant-pet-mvp",
+  "version": "0.1.0",
+  "description": "A minimal Electron desktop plant pet widget MVP.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "dev": "electron .",
+    "dist:win": "electron-builder --win"
+  },
+  "keywords": [
+    "electron",
+    "desktop-pet",
+    "plant"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.example.desktopplantpet",
+    "productName": "Desktop Plant Pet",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "renderer.js",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

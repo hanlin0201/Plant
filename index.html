@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>桌面小植物</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app" class="app" aria-label="桌面小植物">
+      <div id="bubble" class="bubble hidden" role="status" aria-live="polite"></div>
+
+      <button id="plant" class="plant normal" type="button" aria-label="桌面小植物">
+        <span class="plant-hot-mark" aria-hidden="true">☀</span>
+        <img id="plantImage" class="plant-image hidden" alt="" draggable="false" />
+        <span id="plantEmoji" class="plant-emoji" aria-hidden="true">🌱</span>
+        <span class="plant-shadow" aria-hidden="true"></span>
+      </button>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
