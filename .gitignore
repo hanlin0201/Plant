@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+
+dist/
+build/
+out/
+release/
+.cache/
+.vite/
+
+supabase/.temp/
+*.log

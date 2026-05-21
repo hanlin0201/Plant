@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "electron .",
+    "simulate:device": "node scripts/simulate-device.js",
     "dist:win": "electron-builder --win"
   },
   "keywords": [
@@ -31,6 +32,7 @@
       "index.html",
       "styles.css",
       "renderer.js",
+      "services/**/*",
       "assets/**/*",
       "package.json"
     ],

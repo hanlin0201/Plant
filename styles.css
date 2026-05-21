@@ -179,6 +179,12 @@ button {
   opacity: 0.9;
 }
 
+.plant.unknown .plant-image,
+.plant.unknown .plant-emoji {
+  animation: idleRest 4s ease-in-out infinite;
+  opacity: 0.82;
+}
+
 @keyframes breathe {
   0%,
   100% {
