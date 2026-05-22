@@ -1,4 +1,5 @@
 import { getPlantStatus } from "./services/plantApi.js";
+import { sendPlantMessage as sendPlantMessageToApi } from "./services/chatApi.js";
 
 const plantEl = document.querySelector("#plant");
 const plantImageEl = document.querySelector("#plantImage");
@@ -14,7 +15,6 @@ const panelFormEl = document.querySelector("#panelChatForm");
 const panelInputEl = document.querySelector("#panelChatInput");
 const panelSendBtnEl = document.querySelector("#panelChatSendBtn");
 const collapsePanelBtnEl = document.querySelector("#collapsePanelBtn");
-const personalityButtons = document.querySelectorAll(".personality-button");
 
 const DEVICE_ID = "sensor_001";
 const BACKEND_POLL_INTERVAL_MS = 3000;
@@ -23,11 +23,9 @@ const MAX_LOCAL_CHAT_HISTORY = 8;
 
 let currentState = "normal";
 let lastReadingId = null;
-let lastSensorData = null;
 let bubbleTimer = null;
 let dragState = null;
 let hasGreeted = false;
-let selectedPersonality = "healing";
 let chatHistory = [];
 let chatPending = false;
 let panelExpanded = false;
@@ -122,8 +120,6 @@ async function pollPlantStatus() {
       return;
     }
 
-    lastSensorData = status.sensor_data || null;
-
     if (status.state) {
       setPlantState(status.state);
     }
@@ -178,20 +174,9 @@ function collapseChatUi() {
   inputBarEl.classList.add("hidden");
 }
 
-function setPersonality(personality) {
-  selectedPersonality = personality === "sassy" ? "sassy" : "healing";
-
-  personalityButtons.forEach((button) => {
-    button.classList.toggle(
-      "active",
-      button.dataset.personality === selectedPersonality,
-    );
-  });
-}
-
 async function sendInlineMessage(event) {
   event.preventDefault();
-  await sendPlantMessage({
+  await submitPlantMessage({
     inputEl: inlineInputEl,
     source: "inline",
   });
@@ -199,13 +184,13 @@ async function sendInlineMessage(event) {
 
 async function sendPanelMessage(event) {
   event.preventDefault();
-  await sendPlantMessage({
+  await submitPlantMessage({
     inputEl: panelInputEl,
     source: "panel",
   });
 }
 
-async function sendPlantMessage({ inputEl, source }) {
+async function submitPlantMessage({ inputEl, source }) {
   if (chatPending) {
     return;
   }
@@ -223,17 +208,23 @@ async function sendPlantMessage({ inputEl, source }) {
   setChatPending(true);
   showBubble("...", { persist: true });
 
-  const result = await window.plantPet?.sendChatMessage({
-    personality: selectedPersonality,
-    text,
-    history: historyForRequest,
-    sensorData: lastSensorData,
-    currentState,
-  });
+  let result;
+  try {
+    const messages = buildChatMessages(historyForRequest, text);
+    result = await sendPlantMessageToApi(messages, DEVICE_ID);
+  } catch (error) {
+    result = {
+      reply: "",
+      error:
+        error instanceof Error
+          ? error.message
+          : "连接失败，稍后再试",
+    };
+  }
 
   setChatPending(false);
 
-  if (result?.ok) {
+  if (result?.reply) {
     pushChatRecord("plant", result.reply);
     showBubble(result.reply, { persist: true });
     renderPanelHistory();
@@ -241,6 +232,28 @@ async function sendPlantMessage({ inputEl, source }) {
   }
 
   showSystemMessage(result?.error || "连接失败，稍后再试", source);
+}
+
+function buildChatMessages(history, latestUserText) {
+  const messages = [];
+
+  for (const item of history) {
+    if (!item || typeof item.text !== "string" || item.text.trim() === "") {
+      continue;
+    }
+
+    if (item.role === "user") {
+      messages.push({ role: "user", content: item.text });
+      continue;
+    }
+
+    if (item.role === "plant") {
+      messages.push({ role: "assistant", content: item.text });
+    }
+  }
+
+  messages.push({ role: "user", content: latestUserText });
+  return messages.slice(-MAX_LOCAL_CHAT_HISTORY);
 }
 
 function pushChatRecord(role, text) {
@@ -362,12 +375,6 @@ panelInputEl.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     collapseToInput();
   }
-});
-
-personalityButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    setPersonality(button.dataset.personality);
-  });
 });
 
 document.addEventListener("click", (event) => {

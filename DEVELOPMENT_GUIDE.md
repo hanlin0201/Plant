@@ -498,3 +498,155 @@ curl -i "https://<project-ref>.supabase.co/functions/v1/latest-data?device_id=se
 - 增加用户系统和多植物绑定。
 - 增加 AI 聊天，但应和传感器状态链路解耦。
 - 增加 RLS 策略和更完整的权限模型。
+
+## 16. 植物对话功能
+
+### 功能目标
+
+植物对话是 MVP 的最小聊天链路：Electron 前端发送用户消息，`chat` Edge Function 读取当前植物状态上下文，调用硅基流动 API，并返回植物回复。
+
+当前只做即时回复，不做登录系统、不做长期聊天记录、不做复杂记忆系统、不改 `plant_readings` 表结构。
+
+### 完整链路
+
+```text
+Electron services/chatApi.js
+        |
+        | POST /api/chat
+        | Supabase 实际路径: /functions/v1/chat
+        v
+supabase/functions/chat/index.ts
+        v
+chatService.generatePlantReply()
+        v
+plantContextService.getPlantContext()
+        v
+sensorRepository.getLatestReading({ device_id })
+        v
+读取 PLANT_SYSTEM_PROMPT
+        v
+调用硅基流动 API
+        v
+返回 reply
+        v
+Electron 显示回复
+```
+
+部署后的实际地址：
+
+```text
+https://jifvbfumwasmnqmxvgmv.supabase.co/functions/v1/chat
+```
+
+### 新增文件说明
+
+- `supabase/functions/chat/index.ts`：chat Edge Function API 入口，只负责 CORS、POST 校验、请求体解析、调用 service、返回 JSON。
+- `supabase/functions/shared/services/chatService.ts`：读取硅基流动配置、组装 prompt 和上下文、调用硅基流动 API、解析回复。
+- `supabase/functions/shared/services/plantContextService.ts`：通过 repository 读取最新植物状态，整理成给模型看的上下文。
+- `supabase/functions/shared/prompts/plantSystemPrompt.ts`：产品 prompt 的唯一后端文件，当前为占位文本，后续由产品同学替换。
+- `services/chatApi.js`：Electron 前端统一 chat 请求文件，不在 UI 组件里散落 fetch。
+
+### 请求与响应
+
+请求：
+
+```json
+{
+  "device_id": "sensor_001",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你现在感觉怎么样？"
+    }
+  ]
+}
+```
+
+成功响应：
+
+```json
+{
+  "reply": "植物回复内容",
+  "plant_state": "thirsty",
+  "event_type": "thirsty_warning"
+}
+```
+
+校验规则：
+
+- `device_id` 可省略，默认 `sensor_001`。
+- `messages` 必须是非空数组。
+- `messages` 最后一条必须是 `role = user`。
+- `device_id` 仍复用 `plantThresholds.validDeviceIds` 的 MVP allow-list。
+
+### Supabase Secrets
+
+chat Edge Function 需要这些 secrets：
+
+```bash
+supabase secrets set AI_API_KEY="你的硅基流动 API Key" --project-ref jifvbfumwasmnqmxvgmv
+supabase secrets set AI_API_BASE_URL="硅基流动 chat completions 接口地址" --project-ref jifvbfumwasmnqmxvgmv
+supabase secrets set AI_MODEL="你的模型名" --project-ref jifvbfumwasmnqmxvgmv
+```
+
+`AI_API_BASE_URL` 应配置为完整硅基流动 chat completions 地址。模型名只从 `AI_MODEL` 读取，不在代码中写死。
+
+部署：
+
+```bash
+supabase functions deploy chat --project-ref jifvbfumwasmnqmxvgmv
+```
+
+### curl 测试
+
+Windows PowerShell 示例：
+
+```powershell
+curl.exe -i -X POST "https://jifvbfumwasmnqmxvgmv.supabase.co/functions/v1/chat" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer <Supabase Legacy anon key>" `
+  -d "{ `"device_id`": `"sensor_001`", `"messages`": [{ `"role`": `"user`", `"content`": `"你现在感觉怎么样？`" }] }"
+```
+
+### Electron 调用方式
+
+前端统一通过：
+
+```text
+services/chatApi.js
+```
+
+示例：
+
+```js
+import { sendPlantMessage } from "./services/chatApi.js";
+
+const result = await sendPlantMessage([
+  {
+    role: "user",
+    content: "你现在感觉怎么样？",
+  },
+]);
+
+console.log(result.reply);
+```
+
+`chatApi.js` 顶部只能配置 Supabase Legacy anon public key。不要写入 `AI_API_KEY`、`service_role`、`sb_secret` 或数据库密码。
+
+### 安全说明
+
+- `AI_API_KEY` 只能存在 Supabase secrets。
+- Electron 前端不能保存 `AI_API_KEY`。
+- `services/chatApi.js` 只能保存 Supabase Legacy anon public key。
+- 不要把 service role key、硅基流动 key、sb_secret key 写进前端。
+- 不要把真实密钥提交到 GitHub。
+- 当前 MVP 沿用 Edge Function 的 Supabase 鉴权习惯，不新增登录系统。
+
+### 常见问题
+
+- `AI_API_KEY` 没设置：chat 返回明确缺少环境变量。
+- `AI_API_BASE_URL` 写错：chat 返回硅基流动请求失败。
+- `AI_MODEL` 写错：硅基流动接口可能返回模型不存在或无权限。
+- 前端误填了硅基流动 key：这是安全风险，应立即移除并轮换 key。
+- `plant_readings` 没有数据：上下文会变成 `unknown`，聊天不失败。
+- CORS 报错：检查 Edge Function 是否正常响应 `OPTIONS`。

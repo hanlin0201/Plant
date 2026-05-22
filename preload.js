@@ -22,9 +22,6 @@ contextBridge.exposeInMainWorld('plantPet', {
   endDrag() {
     ipcRenderer.send('plant-window:drag-end');
   },
-  sendChatMessage(payload) {
-    return ipcRenderer.invoke('plant-chat:send', payload);
-  },
   onMockSensor(callback) {
     ipcRenderer.on('sensor:mock-once', callback);
   },

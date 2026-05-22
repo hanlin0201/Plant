@@ -1,5 +1,4 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
-const fs = require('fs/promises');
 const path = require('path');
 
 let mainWindow = null;
@@ -12,10 +11,6 @@ const WINDOW_SIZE = {
   height: 420
 };
 
-const SILICONFLOW_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
-const SILICONFLOW_MODEL = 'Qwen/Qwen3.5-27B';
-const MAX_CHAT_HISTORY_ITEMS = 8;
-const promptCache = new Map();
 
 // main.js is Electron's main process. It owns native desktop behavior:
 // transparent window creation, tray/menu lifecycle, hide-vs-quit behavior,
@@ -196,10 +191,6 @@ ipcMain.handle('plant-window:show', () => {
   showPlantWindow();
 });
 
-ipcMain.handle('plant-chat:send', async (_event, payload) => {
-  return sendPlantChat(payload);
-});
-
 ipcMain.handle('plant-window:popup-menu', () => {
   const menu = Menu.buildFromTemplate([
     {
@@ -247,141 +238,3 @@ ipcMain.on('plant-window:drag-move', (_event, point) => {
 ipcMain.on('plant-window:drag-end', () => {
   dragSession = null;
 });
-
-async function sendPlantChat(payload = {}) {
-  const apiKey = process.env.SILICONFLOW_API_KEY;
-
-  if (!apiKey) {
-    return {
-      ok: false,
-      error: '还没有配置 SiliconFlow API Key'
-    };
-  }
-
-  try {
-    const personality = normalizePersonality(payload.personality);
-    const systemPrompt = await readPersonalityPrompt(personality);
-    const sensorData = formatSensorDataForPrompt(payload.sensorData, payload.currentState);
-    const chatHistory = formatChatHistoryForPrompt(payload.history);
-    const userText = typeof payload.text === 'string' ? payload.text.trim() : '';
-
-    if (!userText) {
-      return {
-        ok: false,
-        error: '请输入聊天内容'
-      };
-    }
-
-    const response = await fetch(SILICONFLOW_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: SILICONFLOW_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-              .replace('{{sensor_data}}', sensorData)
-              .replace('{{chat_history}}', chatHistory)
-          },
-          {
-            role: 'user',
-            content: userText
-          }
-        ],
-        temperature: 0.9,
-        max_tokens: 150,
-        enable_thinking: false
-      })
-    });
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: `SiliconFlow 请求失败：${response.status}`
-      };
-    }
-
-    const data = await response.json();
-    const reply = data?.choices?.[0]?.message?.content?.trim();
-
-    if (!reply) {
-      return {
-        ok: false,
-        error: '模型暂时没有返回内容'
-      };
-    }
-
-    return {
-      ok: true,
-      reply
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      error: `连接失败：${error.message}`
-    };
-  }
-}
-
-function normalizePersonality(personality) {
-  return personality === 'sassy' ? 'sassy' : 'healing';
-}
-
-async function readPersonalityPrompt(personality) {
-  const normalized = normalizePersonality(personality);
-
-  if (promptCache.has(normalized)) {
-    return promptCache.get(normalized);
-  }
-
-  const promptPath = path.join(__dirname, 'prompts', `${normalized}.md`);
-  const file = await fs.readFile(promptPath, 'utf8');
-  const match = file.match(/```([\s\S]*?)```/);
-  const prompt = (match ? match[1] : file).trim();
-  promptCache.set(normalized, prompt);
-  return prompt;
-}
-
-function formatSensorDataForPrompt(sensorData = {}, currentState = 'normal') {
-  const soilMoisture = formatValue(sensorData.soilMoisture ?? sensorData.soil_moisture, '%');
-  const temperature = formatValue(sensorData.temperature, '°C');
-  const airHumidity = formatValue(sensorData.airHumidity ?? sensorData.air_humidity, '%');
-  const light = formatValue(sensorData.light ?? sensorData.light_lux, ' lux');
-
-  return [
-    '当前传感器数据：',
-    `- 土壤湿度: ${soilMoisture}`,
-    `- 环境温度: ${temperature}`,
-    `- 空气湿度: ${airHumidity}`,
-    `- 光照强度: ${light}`,
-    `- 当前状态: ${currentState || 'normal'}`
-  ].join('\n');
-}
-
-function formatChatHistoryForPrompt(history = []) {
-  const safeHistory = Array.isArray(history) ? history.slice(-MAX_CHAT_HISTORY_ITEMS) : [];
-
-  if (safeHistory.length === 0) {
-    return '最近对话：暂无';
-  }
-
-  const lines = safeHistory.map((item) => {
-    const speaker = item.role === 'plant' ? '植物' : '主人';
-    const text = typeof item.text === 'string' ? item.text : '';
-    return `[${speaker}] ${text}`;
-  });
-
-  return ['最近对话：', ...lines].join('\n');
-}
-
-function formatValue(value, unit) {
-  if (value === undefined || value === null || value === '') {
-    return '未知';
-  }
-
-  return `${value}${unit}`;
-}
