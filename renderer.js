@@ -24,6 +24,7 @@ const plantEl = document.querySelector("#plant");
 const petAnimationEl = document.querySelector("#petAnimation");
 const plantEmojiEl = document.querySelector("#plantEmoji");
 const bubbleEl = document.querySelector("#bubble");
+const bubbleTextEl = document.querySelector("#bubbleText");
 const inputBarEl = document.querySelector("#inlineChatForm");
 const inlineInputEl = document.querySelector("#inlineChatInput");
 const inlineSendBtnEl = document.querySelector("#inlineChatSendBtn");
@@ -231,7 +232,11 @@ function showBubble(text, options = {}) {
   }
 
   clearTimeout(bubbleTimer);
-  bubbleEl.textContent = text;
+  if (bubbleTextEl) {
+    bubbleTextEl.textContent = text;
+  } else {
+    bubbleEl.textContent = text;
+  }
   bubbleEl.classList.remove("hidden");
 
   if (!options.persist) {

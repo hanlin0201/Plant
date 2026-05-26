@@ -65,7 +65,23 @@
       </section>
 
       <div class="pet-stack">
-        <button id="bubble" class="bubble hidden" type="button" role="status" aria-live="polite"></button>
+        <button id="bubble" class="bubble hidden" type="button" role="status" aria-live="polite">
+          <svg class="bubble-shape" viewBox="0 0 320 118" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              class="bubble-fill"
+              d="M24 18 C38 8, 66 8, 94 12 C142 8, 198 8, 246 14 C282 14, 305 22, 312 36 C319 50, 319 66, 312 80 C304 94, 282 102, 246 103 C202 110, 152 110, 102 107 C72 111, 44 109, 28 98 C16 88, 10 74, 12 60 C10 46, 14 30, 24 18 Z"
+            />
+            <path
+              class="bubble-stroke"
+              d="M24 18 C38 8, 66 8, 94 12 C142 8, 198 8, 246 14 C282 14, 305 22, 312 36 C319 50, 319 66, 312 80 C304 94, 282 102, 246 103 C202 110, 152 110, 102 107 C72 111, 44 109, 28 98 C16 88, 10 74, 12 60 C10 46, 14 30, 24 18 Z"
+            />
+            <path
+              class="bubble-tail-stroke"
+              d="M232 101 C242 108, 252 115, 266 117 C254 109, 250 101, 252 91"
+            />
+          </svg>
+          <span id="bubbleText" class="bubble-text"></span>
+        </button>
 
         <form id="inlineChatForm" class="input-bar hidden" aria-label="快速回复">
           <input id="inlineChatInput" class="inline-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
