@@ -8,17 +8,60 @@
   </head>
   <body>
     <main id="app" class="app" aria-label="桌面小植物">
-      <section id="chatPanel" class="chat-panel hidden" aria-label="小植物聊天">
+      <section id="chatPanel" class="chat-panel hidden" aria-label="小植物面板">
         <button id="collapsePanelBtn" class="panel-collapse" type="button">收起</button>
-        <div class="personality-toggle" role="group" aria-label="选择植物性格">
-          <button id="healingModeBtn" class="personality-button active" type="button" data-personality="healing">治愈</button>
-          <button id="sassyModeBtn" class="personality-button" type="button" data-personality="sassy">毒舌</button>
+        <div class="panel-tabs" role="tablist" aria-label="面板切换">
+          <button id="chatTabBtn" class="panel-tab active" type="button" role="tab" aria-selected="true">对话</button>
+          <button id="statusTabBtn" class="panel-tab" type="button" role="tab" aria-selected="false">状态</button>
         </div>
-        <div id="chatHistory" class="chat-history" aria-live="polite"></div>
-        <form id="panelChatForm" class="chat-form">
-          <input id="panelChatInput" class="chat-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
-          <button id="panelChatSendBtn" class="chat-send" type="submit">发送</button>
-        </form>
+
+        <section id="chatView" class="panel-view">
+          <div id="chatHistory" class="chat-history" aria-live="polite"></div>
+          <form id="panelChatForm" class="chat-form">
+            <input id="panelChatInput" class="chat-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
+            <button id="panelChatSendBtn" class="chat-send" type="submit">发送</button>
+          </form>
+        </section>
+
+        <section id="statusView" class="panel-view hidden" aria-live="polite">
+          <div id="statusLoading" class="status-note hidden">正在同步植物状态...</div>
+          <div id="statusError" class="status-note hidden"></div>
+
+          <article class="status-card profile-card">
+            <div class="profile-avatar" aria-hidden="true">🌱</div>
+            <div class="profile-meta">
+              <h3 id="profileName" class="profile-name">-</h3>
+              <p id="profileSpecies" class="profile-sub">-</p>
+              <p id="profileScientific" class="profile-sub">-</p>
+              <p id="profileCompanionDays" class="profile-days">-</p>
+            </div>
+          </article>
+
+          <section class="status-section">
+            <div class="section-title">传感状态</div>
+            <div id="sensorGrid" class="sensor-grid"></div>
+          </section>
+
+          <section id="achievementListView" class="status-section">
+            <div class="section-title">成就里程碑</div>
+            <div id="achievementGrid" class="achievement-grid"></div>
+          </section>
+
+          <section id="achievementDetailView" class="status-section hidden">
+            <button id="achievementBackBtn" class="detail-back" type="button">返回成就列表</button>
+            <div id="achievementDetailCard" class="status-card achievement-detail"></div>
+          </section>
+          <section id="petDebugTools" class="status-section pet-debug-tools">
+            <div class="section-title">开发调试</div>
+            <div class="pet-debug-grid">
+              <button class="pet-debug-btn" type="button" data-debug-action="idle">播放 idle</button>
+              <button class="pet-debug-btn" type="button" data-debug-action="touch">播放 touch</button>
+              <button class="pet-debug-btn" type="button" data-debug-action="reward-pending">设置奖励待领取</button>
+              <button class="pet-debug-btn" type="button" data-debug-action="mock-dry">模拟缺水</button>
+              <button class="pet-debug-btn" type="button" data-debug-action="mock-normal">模拟恢复正常</button>
+            </div>
+          </section>
+        </section>
       </section>
 
       <div class="pet-stack">
@@ -32,8 +75,10 @@
 
         <button id="plant" class="plant normal" type="button" aria-label="桌面小植物">
           <span class="plant-hot-mark" aria-hidden="true">☀</span>
-          <img id="plantImage" class="plant-image hidden" alt="" draggable="false" />
-          <span id="plantEmoji" class="plant-emoji" aria-hidden="true">🌱</span>
+          <div class="pet-stage">
+            <img id="petAnimation" class="plant-image pet-animation" alt="桌面小植物" draggable="false" />
+            <span id="plantEmoji" class="plant-emoji hidden" aria-hidden="true">🌱</span>
+          </div>
           <span class="plant-shadow" aria-hidden="true"></span>
         </button>
       </div>

@@ -22,6 +22,23 @@ contextBridge.exposeInMainWorld('plantPet', {
   endDrag() {
     ipcRenderer.send('plant-window:drag-end');
   },
+  getRuntimeConfig() {
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn(
+        "[runtime config] Missing Supabase config. 请复制 .env.example 为 .env，并填写 Supabase anon key。"
+      );
+    }
+
+    return {
+      supabaseUrl,
+      supabaseAnonKey,
+      VITE_SUPABASE_URL: supabaseUrl,
+      VITE_SUPABASE_ANON_KEY: supabaseAnonKey,
+    };
+  },
   onMockSensor(callback) {
     ipcRenderer.on('sensor:mock-once', callback);
   },

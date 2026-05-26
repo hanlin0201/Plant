@@ -1,5 +1,8 @@
+const fs = require('fs');
 const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
 const path = require('path');
+
+loadRuntimeEnv();
 
 let mainWindow = null;
 let tray = null;
@@ -10,6 +13,54 @@ const WINDOW_SIZE = {
   width: 520,
   height: 420
 };
+
+// This Electron app does not use a Vite build step, so VITE_* variables are
+// not injected automatically. Load only the safe public Supabase config from
+// .env for the preload bridge; never read service_role, AI keys, or passwords.
+function loadRuntimeEnv() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) {
+    return;
+  }
+
+  const allowedKeys = new Set([
+    'VITE_SUPABASE_URL',
+    'VITE_SUPABASE_ANON_KEY'
+  ]);
+
+  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    if (!allowedKeys.has(key) || process.env[key]) {
+      continue;
+    }
+
+    process.env[key] = parseEnvValue(trimmed.slice(separatorIndex + 1));
+  }
+}
+
+function parseEnvValue(value) {
+  const trimmed = value.trim();
+  const quote = trimmed[0];
+  if (
+    (quote === '"' || quote === "'") &&
+    trimmed.endsWith(quote)
+  ) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
+}
 
 
 // main.js is Electron's main process. It owns native desktop behavior:
