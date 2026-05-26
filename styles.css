@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   color-scheme: light;
   font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
   --bubble: rgba(255, 255, 255, 0.94);
@@ -738,3 +738,279 @@ button {
   }
 }
 
+
+
+/* ---- Status Panel Lightweight Refresh (maintainable overrides) ---- */
+:root {
+  --panel-border: rgba(255, 255, 255, 0.54);
+  --panel-bg: rgba(255, 255, 255, 0.68);
+  --soft-border: rgba(49, 81, 58, 0.12);
+  --soft-chip: rgba(246, 250, 247, 0.8);
+}
+
+.chat-panel {
+  width: 280px;
+  height: 420px;
+  min-width: 260px;
+  min-height: 320px;
+  max-width: 520px;
+  max-height: 640px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+}
+
+.panel-collapse {
+  height: 22px;
+  background: rgba(255, 255, 255, 0.44);
+  font-size: 11px;
+}
+
+.panel-tabs {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 3px;
+  border: 1px solid var(--soft-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.panel-tab {
+  height: 24px;
+  border: 1px solid transparent;
+  color: rgba(33, 53, 40, 0.66);
+  background: rgba(246, 250, 247, 0.4);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.panel-tab.active {
+  color: rgba(33, 53, 40, 0.9);
+  border-color: rgba(31, 143, 88, 0.26);
+  background: rgba(232, 245, 236, 0.92);
+}
+
+#statusView {
+  overflow: auto;
+  min-height: 0;
+}
+
+.status-section {
+  margin-top: 8px;
+}
+
+.section-title {
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(33, 53, 40, 0.74);
+}
+
+.status-card {
+  border: 1px solid var(--soft-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 4px 10px rgba(26, 45, 31, 0.06);
+}
+
+.profile-card.plant-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+
+.plant-left {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.plant-avatar {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--soft-border);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.plant-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.plant-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-name {
+  font-size: 14px;
+}
+
+.plant-name-edit {
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--soft-border);
+  background: rgba(255, 255, 255, 0.6);
+  color: rgba(33, 53, 40, 0.72);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.profile-name-input {
+  width: 100%;
+  margin-top: 3px;
+  height: 22px;
+  border: 1px solid rgba(49, 81, 58, 0.18);
+  border-radius: 8px;
+  padding: 0 7px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: rgba(33, 53, 40, 0.88);
+}
+
+.profile-sub {
+  font-size: 11px;
+}
+
+.plant-days {
+  flex: 0 0 auto;
+  text-align: center;
+  min-width: 56px;
+}
+
+.days-number {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 700;
+  color: #1f8f58;
+}
+
+.days-label {
+  margin-top: 2px;
+  font-size: 10px;
+  color: rgba(33, 53, 40, 0.66);
+}
+
+.sensor-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.sensor-card {
+  padding: 6px 7px;
+  border: 1px solid rgba(49, 81, 58, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.sensor-head {
+  font-size: 11px;
+}
+
+.sensor-value {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.sensor-status {
+  margin-left: 4px;
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.sensor-progress {
+  height: 4px;
+}
+
+.achievement-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scroll-behavior: smooth;
+}
+
+.achievement-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.achievement-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(49, 81, 58, 0.18);
+}
+
+.achievement-card {
+  flex: 0 0 124px;
+  height: 112px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.achievement-card.locked {
+  opacity: 0.58;
+}
+
+.achievement-card.progress {
+  border-color: rgba(240, 138, 36, 0.34);
+  background: rgba(255, 243, 223, 0.7);
+}
+
+.achievement-title {
+  font-size: 12px;
+}
+
+.achievement-desc {
+  font-size: 11px;
+}
+
+.achievement-progress {
+  font-size: 10px;
+}
+
+.panel-resize-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  z-index: 20;
+  border-radius: 4px 0 6px 0;
+  border: 1px solid rgba(49, 81, 58, 0.3);
+  background:
+    linear-gradient(135deg, transparent 42%, rgba(49, 81, 58, 0.42) 43%, rgba(49, 81, 58, 0.42) 57%, transparent 58%),
+    rgba(255, 255, 255, 0.64);
+  cursor: nesw-resize;
+  -webkit-app-region: no-drag;
+}
+
+.send-button,
+.chat-send {
+  color: #24513a;
+  background: #bfe9cf;
+}
+
+.send-button:hover,
+.chat-send:hover {
+  background: #a9dfbf;
+}
+
+.send-button:disabled,
+.chat-send:disabled {
+  color: rgba(36, 81, 58, 0.62);
+  background: rgba(191, 233, 207, 0.62);
+}
+
+@media (max-width: 340px) {
+  .sensor-grid {
+    grid-template-columns: 1fr;
+  }
+}

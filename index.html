@@ -27,13 +27,25 @@
           <div id="statusLoading" class="status-note hidden">正在同步植物状态...</div>
           <div id="statusError" class="status-note hidden"></div>
 
-          <article class="status-card profile-card">
-            <div class="profile-avatar" aria-hidden="true">🌱</div>
-            <div class="profile-meta">
-              <h3 id="profileName" class="profile-name">-</h3>
-              <p id="profileSpecies" class="profile-sub">-</p>
-              <p id="profileScientific" class="profile-sub">-</p>
-              <p id="profileCompanionDays" class="profile-days">-</p>
+          <article class="status-card profile-card plant-info">
+            <div class="plant-left">
+              <button id="profileAvatarButton" class="profile-avatar plant-avatar" type="button" aria-label="修改头像">
+                <img id="profileAvatarImage" class="plant-avatar-image" alt="植物头像" />
+              </button>
+              <input id="profileAvatarInput" class="hidden" type="file" accept="image/*" />
+              <div class="profile-meta plant-text">
+                <div class="plant-name-row">
+                  <h3 id="profileName" class="profile-name">-</h3>
+                  <button id="profileNameEditBtn" class="plant-name-edit" type="button" aria-label="修改名字">编辑</button>
+                </div>
+                <input id="profileNameInput" class="profile-name-input hidden" type="text" maxlength="16" />
+                <p id="profileSpecies" class="profile-sub">-</p>
+                <p id="profileScientific" class="profile-sub">-</p>
+              </div>
+            </div>
+            <div class="plant-days">
+              <div id="profileCompanionDaysNumber" class="days-number">-</div>
+              <div class="days-label">天陪伴</div>
             </div>
           </article>
 
@@ -63,6 +75,7 @@
           </section>
         </section>
       </section>
+      <div id="panelResizeHandle" class="panel-resize-handle hidden" aria-hidden="true"></div>
 
       <div class="pet-stack">
         <button id="bubble" class="bubble hidden" type="button" role="status" aria-live="polite">
@@ -85,14 +98,14 @@
 
         <form id="inlineChatForm" class="input-bar hidden" aria-label="快速回复">
           <input id="inlineChatInput" class="inline-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
-          <button id="inlineChatSendBtn" class="icon-button send-button" type="submit" aria-label="发送">➤</button>
+          <button id="inlineChatSendBtn" class="icon-button send-button" type="submit" aria-label="发送">→</button>
           <button id="expandPanelBtn" class="icon-button expand-button" type="button" aria-label="展开聊天面板">↗</button>
         </form>
 
         <button id="plant" class="plant normal" type="button" aria-label="桌面小植物">
           <span class="plant-hot-mark" aria-hidden="true">☀</span>
           <div class="pet-stage">
-            <img id="petAnimation" class="plant-image pet-animation" alt="桌面小植物" draggable="false" />
+            <img id="petAnimation" class="plant-image pet-animation" src="./assets/pet/idle_fixed.gif" alt="桌面小植物" draggable="false" />
             <span id="plantEmoji" class="plant-emoji hidden" aria-hidden="true">🌱</span>
           </div>
           <span class="plant-shadow" aria-hidden="true"></span>

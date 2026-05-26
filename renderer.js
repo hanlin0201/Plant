@@ -45,9 +45,15 @@ const panelSendBtnEl = document.querySelector("#panelChatSendBtn");
 const statusLoadingEl = document.querySelector("#statusLoading");
 const statusErrorEl = document.querySelector("#statusError");
 const profileNameEl = document.querySelector("#profileName");
+const profileNameEditBtnEl = document.querySelector("#profileNameEditBtn");
+const profileNameInputEl = document.querySelector("#profileNameInput");
+const profileAvatarButtonEl = document.querySelector("#profileAvatarButton");
+const profileAvatarImageEl = document.querySelector("#profileAvatarImage");
+const profileAvatarInputEl = document.querySelector("#profileAvatarInput");
 const profileSpeciesEl = document.querySelector("#profileSpecies");
 const profileScientificEl = document.querySelector("#profileScientific");
-const profileCompanionDaysEl = document.querySelector("#profileCompanionDays");
+const profileCompanionDaysNumberEl = document.querySelector("#profileCompanionDaysNumber");
+const panelResizeHandleEl = document.querySelector("#panelResizeHandle");
 const sensorGridEl = document.querySelector("#sensorGrid");
 const achievementGridEl = document.querySelector("#achievementGrid");
 const achievementListViewEl = document.querySelector("#achievementListView");
@@ -64,6 +70,16 @@ const DEVICE_ID = "sensor_001";
 const BACKEND_POLL_INTERVAL_MS = 3000;
 const CLICK_DISTANCE_PX = 5;
 const MAX_LOCAL_CHAT_HISTORY = 8;
+const PANEL_MIN_WIDTH = 260;
+const PANEL_MIN_HEIGHT = 320;
+const PANEL_DEFAULT_WIDTH = 280;
+const PANEL_DEFAULT_HEIGHT = 420;
+
+const STORAGE_KEYS = {
+  plantName: "desktopPlant.plantName",
+  plantAvatar: "desktopPlant.plantAvatar",
+  panelSize: "desktopPlant.panelSize",
+};
 
 const plantProfile = getPlantProfile();
 
@@ -88,7 +104,7 @@ const achievements = [
   },
   {
     id: "water_balance",
-    icon: "🌧",
+    icon: "💧",
     title: "雨露均沾",
     description: "浇水不忘记",
     condition: "后续根据土壤湿度变化或浇水记录判断",
@@ -119,6 +135,8 @@ let isPetActionPlaying = false;
 let wasPlantDry = false;
 let hasWaterRewardPending = false;
 let pendingActionTimer = null;
+let statusPanelInteractionsInitialized = false;
+let panelResizeSession = null;
 
 function preloadPetAnimations() {
   const tasks = Object.values(PET_ANIMATIONS).map(
@@ -356,6 +374,7 @@ function expandToPanel() {
   setPanelTab("chat");
   renderPanelHistory();
   chatPanelEl.classList.remove("hidden");
+  syncResizeHandlePosition();
   window.setTimeout(() => {
     panelInputEl.focus();
     scrollChatHistory();
@@ -365,12 +384,14 @@ function expandToPanel() {
 function collapseToInput() {
   panelExpanded = false;
   chatPanelEl.classList.add("hidden");
+  syncResizeHandlePosition();
   activateInput();
 }
 
 function collapseChatUi() {
   panelExpanded = false;
   chatPanelEl.classList.add("hidden");
+  syncResizeHandlePosition();
   inputBarEl.classList.add("hidden");
 }
 
@@ -389,12 +410,293 @@ function setPanelTab(tab) {
   }
 }
 
+function safeGetLocalStorage(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function safeSetLocalStorage(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch (_error) {
+    // Ignore quota/security errors and keep runtime behavior.
+  }
+}
+
+function safeRemoveLocalStorage(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch (_error) {
+    // Ignore quota/security errors and keep runtime behavior.
+  }
+}
+
+function getPlantDisplayName(profile) {
+  const customName = safeGetLocalStorage(STORAGE_KEYS.plantName);
+  if (typeof customName === "string" && customName.trim()) {
+    return customName.trim();
+  }
+  if (profile?.name && String(profile.name).trim()) {
+    return String(profile.name).trim();
+  }
+  return "小财";
+}
+
+function getDefaultAvatarCandidates() {
+  return [
+    "./assets/pet/idle_fixed.gif",
+    "./assets/pet/touch_fixed.gif",
+    "./assets/pet/reward_fixed.gif",
+  ];
+}
+
+function getPlantAvatarSrc() {
+  const customAvatar = safeGetLocalStorage(STORAGE_KEYS.plantAvatar);
+  if (typeof customAvatar === "string" && customAvatar.startsWith("data:image/")) {
+    return customAvatar;
+  }
+  return getDefaultAvatarCandidates()[0];
+}
+
+function savePanelSize(width, height) {
+  const payload = JSON.stringify({
+    width: Math.round(width),
+    height: Math.round(height),
+  });
+  safeSetLocalStorage(STORAGE_KEYS.panelSize, payload);
+}
+
+function loadPanelSize() {
+  const raw = safeGetLocalStorage(STORAGE_KEYS.panelSize);
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (
+      Number.isFinite(parsed?.width) &&
+      Number.isFinite(parsed?.height) &&
+      parsed.width >= PANEL_MIN_WIDTH &&
+      parsed.height >= PANEL_MIN_HEIGHT
+    ) {
+      return {
+        width: Math.round(parsed.width),
+        height: Math.round(parsed.height),
+      };
+    }
+  } catch (_error) {
+    return null;
+  }
+  return null;
+}
+
+function applyPanelSize(width, height) {
+  const rect = chatPanelEl.getBoundingClientRect();
+  const panelRight = window.innerWidth - rect.right;
+  const panelBottom = window.innerHeight - rect.bottom;
+  const maxWidth = Math.max(PANEL_MIN_WIDTH, window.innerWidth - panelRight - 12);
+  const maxHeight = Math.max(PANEL_MIN_HEIGHT, window.innerHeight - panelBottom - 12);
+  const nextWidth = Math.min(maxWidth, Math.max(PANEL_MIN_WIDTH, width));
+  const nextHeight = Math.min(maxHeight, Math.max(PANEL_MIN_HEIGHT, height));
+  chatPanelEl.style.width = `${nextWidth}px`;
+  chatPanelEl.style.height = `${nextHeight}px`;
+  syncResizeHandlePosition();
+}
+
+function syncResizeHandlePosition() {
+  if (!panelResizeHandleEl) {
+    return;
+  }
+  const hidden = chatPanelEl.classList.contains("hidden");
+  panelResizeHandleEl.classList.toggle("hidden", hidden);
+  if (hidden) {
+    return;
+  }
+  const panelRect = chatPanelEl.getBoundingClientRect();
+  panelResizeHandleEl.style.left = `${Math.round(panelRect.left)}px`;
+  panelResizeHandleEl.style.top = `${Math.round(panelRect.bottom - panelResizeHandleEl.offsetHeight)}px`;
+}
+
+function beginPanelResize(event) {
+  if (!panelResizeHandleEl || event.button !== 0) {
+    return;
+  }
+  const rect = chatPanelEl.getBoundingClientRect();
+  panelResizeSession = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    startWidth: rect.width,
+    startHeight: rect.height,
+  };
+  panelResizeHandleEl.setPointerCapture(event.pointerId);
+  event.preventDefault();
+}
+
+function movePanelResize(event) {
+  if (!panelResizeSession || panelResizeSession.pointerId !== event.pointerId) {
+    return;
+  }
+  const dx = panelResizeSession.startX - event.clientX;
+  const dy = event.clientY - panelResizeSession.startY;
+  const width = panelResizeSession.startWidth + dx;
+  const height = panelResizeSession.startHeight + dy;
+  applyPanelSize(width, height);
+}
+
+function endPanelResize(event) {
+  if (!panelResizeSession || panelResizeSession.pointerId !== event.pointerId) {
+    return;
+  }
+  const rect = chatPanelEl.getBoundingClientRect();
+  savePanelSize(rect.width, rect.height);
+  panelResizeSession = null;
+}
+
+function initPanelResize() {
+  if (!panelResizeHandleEl) {
+    return;
+  }
+  const savedSize = loadPanelSize();
+  if (savedSize) {
+    applyPanelSize(savedSize.width, savedSize.height);
+  } else {
+    applyPanelSize(PANEL_DEFAULT_WIDTH, PANEL_DEFAULT_HEIGHT);
+  }
+
+  panelResizeHandleEl.addEventListener("pointerdown", beginPanelResize);
+  panelResizeHandleEl.addEventListener("pointermove", movePanelResize);
+  panelResizeHandleEl.addEventListener("pointerup", endPanelResize);
+  panelResizeHandleEl.addEventListener("pointercancel", endPanelResize);
+  window.addEventListener("resize", () => {
+    const rect = chatPanelEl.getBoundingClientRect();
+    applyPanelSize(rect.width, rect.height);
+    syncResizeHandlePosition();
+  });
+}
+
+function startPlantNameEditing() {
+  if (!profileNameInputEl) {
+    return;
+  }
+  profileNameInputEl.classList.remove("hidden");
+  profileNameInputEl.value = getPlantDisplayName(plantProfile);
+  profileNameInputEl.focus();
+  profileNameInputEl.select();
+}
+
+function commitPlantNameEditing() {
+  if (!profileNameInputEl) {
+    return;
+  }
+  const nextName = profileNameInputEl.value.trim();
+  if (nextName) {
+    safeSetLocalStorage(STORAGE_KEYS.plantName, nextName);
+  } else {
+    safeRemoveLocalStorage(STORAGE_KEYS.plantName);
+  }
+  profileNameInputEl.classList.add("hidden");
+  renderStatusPanel();
+}
+
+function initPlantNameEditor() {
+  if (!profileNameEditBtnEl || !profileNameEl || !profileNameInputEl) {
+    return;
+  }
+  profileNameEditBtnEl.addEventListener("click", startPlantNameEditing);
+  profileNameEl.addEventListener("click", startPlantNameEditing);
+  profileNameInputEl.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      commitPlantNameEditing();
+    }
+    if (event.key === "Escape") {
+      profileNameInputEl.classList.add("hidden");
+    }
+  });
+  profileNameInputEl.addEventListener("blur", commitPlantNameEditing);
+}
+
+function onAvatarLoadError(event) {
+  const target = event.currentTarget;
+  if (!(target instanceof HTMLImageElement)) {
+    return;
+  }
+  const candidates = getDefaultAvatarCandidates();
+  const current = target.dataset.avatarFallbackIndex
+    ? Number.parseInt(target.dataset.avatarFallbackIndex, 10)
+    : 0;
+  const next = current + 1;
+  if (next < candidates.length) {
+    target.dataset.avatarFallbackIndex = String(next);
+    target.src = candidates[next];
+    return;
+  }
+  target.dataset.avatarFallbackIndex = "0";
+  target.src =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='88' viewBox='0 0 88 88'%3E%3Ccircle cx='44' cy='44' r='44' fill='%23e8f5ec'/%3E%3Ctext x='44' y='51' text-anchor='middle' font-size='32'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E";
+}
+
+function readAvatarFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("读取头像失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleAvatarFileSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+  if (!file.type.startsWith("image/")) {
+    return;
+  }
+  const dataUrl = await readAvatarFileAsDataUrl(file);
+  safeSetLocalStorage(STORAGE_KEYS.plantAvatar, dataUrl);
+  renderStatusPanel();
+  event.target.value = "";
+}
+
+function initAvatarUploader() {
+  if (!profileAvatarButtonEl || !profileAvatarInputEl || !profileAvatarImageEl) {
+    return;
+  }
+  profileAvatarButtonEl.addEventListener("click", () => profileAvatarInputEl.click());
+  profileAvatarInputEl.addEventListener("change", (event) => {
+    handleAvatarFileSelected(event).catch((error) => {
+      console.warn("[avatar upload failed]", error);
+    });
+  });
+  profileAvatarImageEl.addEventListener("error", onAvatarLoadError);
+}
+
+function initStatusPanelInteractions() {
+  if (statusPanelInteractionsInitialized) {
+    return;
+  }
+  statusPanelInteractionsInitialized = true;
+  initPanelResize();
+  initPlantNameEditor();
+  initAvatarUploader();
+  syncResizeHandlePosition();
+}
+
 function renderStatusPanel() {
   const days = getCompanionDays(plantProfile.startDate);
-  profileNameEl.textContent = plantProfile.name || "小财";
+  profileNameEl.textContent = getPlantDisplayName(plantProfile);
   profileSpeciesEl.textContent = `品种：${plantProfile.species || "-"}`;
   profileScientificEl.textContent = `学名：${plantProfile.scientificName || "-"}`;
-  profileCompanionDaysEl.textContent = days ? `${days} 天陪伴` : "陪伴天数暂无";
+  profileCompanionDaysNumberEl.textContent = Number.isFinite(days) ? String(days) : "-";
+
+  if (profileAvatarImageEl) {
+    profileAvatarImageEl.dataset.avatarFallbackIndex = "0";
+    profileAvatarImageEl.src = getPlantAvatarSrc();
+  }
 
   statusLoadingEl.classList.toggle("hidden", !statusLoading);
   statusErrorEl.classList.toggle("hidden", !statusError);
@@ -538,7 +840,7 @@ function handlePetDebugAction(event) {
   }
   if (action === "reward-pending") {
     hasWaterRewardPending = true;
-    showBubble("已设置奖励待领取，点击植物触发 reward。", { persist: true });
+    showBubble("已设置奖励待领取，点击植物会触发 reward。", { persist: true });
     return;
   }
   if (action === "mock-dry") {
@@ -672,7 +974,7 @@ function setChatPending(isPending) {
   inlineSendBtnEl.disabled = isPending;
   panelInputEl.disabled = isPending;
   panelSendBtnEl.disabled = isPending;
-  inlineSendBtnEl.textContent = isPending ? "..." : "➤";
+  inlineSendBtnEl.textContent = isPending ? "..." : "→";
   panelSendBtnEl.textContent = isPending ? "发送中" : "发送";
 }
 
@@ -828,8 +1130,10 @@ window.petDebug = {
   },
 };
 
+initStatusPanelInteractions();
 setPlantState(currentState);
 renderStatusPanel();
-preloadPetAnimations().finally(() => setPetAnimation("idle"));
+setPetAnimation("idle");
+preloadPetAnimations();
 pollPlantStatus();
 setInterval(pollPlantStatus, BACKEND_POLL_INTERVAL_MS);
