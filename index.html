@@ -74,8 +74,9 @@
             </div>
           </section>
         </section>
+
+        <div id="panelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
       </section>
-      <div id="panelResizeHandle" class="panel-resize-handle hidden" aria-hidden="true"></div>
 
       <div class="pet-stack">
         <button id="bubble" class="bubble hidden" type="button" role="status" aria-live="polite">
@@ -96,12 +97,6 @@
           <span id="bubbleText" class="bubble-text"></span>
         </button>
 
-        <form id="inlineChatForm" class="input-bar hidden" aria-label="快速回复">
-          <input id="inlineChatInput" class="inline-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
-          <button id="inlineChatSendBtn" class="icon-button send-button" type="submit" aria-label="发送">→</button>
-          <button id="expandPanelBtn" class="icon-button expand-button" type="button" aria-label="展开聊天面板">↗</button>
-        </form>
-
         <button id="plant" class="plant normal" type="button" aria-label="桌面小植物">
           <span class="plant-hot-mark" aria-hidden="true">☀</span>
           <div class="pet-stage">
@@ -110,6 +105,35 @@
           </div>
           <span class="plant-shadow" aria-hidden="true"></span>
         </button>
+
+        <form id="inlineChatForm" class="input-bar handdraw-chat-form hidden" aria-label="快速回复">
+          <svg class="handdraw-chat-shape" viewBox="0 0 280 64" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              class="handdraw-chat-fill"
+              d="M18 12 C34 5, 72 6, 116 8 C162 4, 221 6, 260 12 C274 18, 278 32, 272 45 C262 59, 218 60, 170 57 C116 62, 58 59, 20 52 C8 44, 7 22, 18 12 Z"
+            />
+            <path
+              class="handdraw-chat-stroke"
+              d="M18 12 C34 5, 72 6, 116 8 C162 4, 221 6, 260 12 C274 18, 278 32, 272 45 C262 59, 218 60, 170 57 C116 62, 58 59, 20 52 C8 44, 7 22, 18 12 Z"
+            />
+          </svg>
+          <div class="handdraw-chat-content">
+            <input id="inlineChatInput" class="inline-input handdraw-chat-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
+            <button id="inlineChatSendBtn" class="icon-button handdraw-icon-button send-button" type="submit" aria-label="发送">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12 L20 5 L15 20 L11 14 L4 12 Z" />
+                <path d="M11 14 L20 5" />
+              </svg>
+            </button>
+            <button id="expandPanelBtn" class="icon-button handdraw-icon-button expand-button" type="button" aria-label="展开聊天面板">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 6 C10 5, 15 5, 18 7 C19 10, 19 15, 17 18 C13 19, 9 19, 6 17 C5 13, 5 9, 7 6 Z" />
+                <path d="M10 14 L15 9" />
+                <path d="M12 9 H15 V12" />
+              </svg>
+            </button>
+          </div>
+        </form>
       </div>
     </main>
 

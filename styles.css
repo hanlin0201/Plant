@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   color-scheme: light;
   font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
   --bubble: rgba(255, 255, 255, 0.94);
@@ -83,7 +83,7 @@ button {
 }
 
 .bubble-fill {
-  fill: rgba(255, 255, 252, 0.9);
+  fill: rgba(255, 255, 252, 0.92);
 }
 
 .bubble-stroke,
@@ -101,7 +101,9 @@ button {
   display: block;
   padding: 15px 14px 13px;
   color: #2b4535;
-  font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", "LXGW WenKai", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font-family:
+    "Ma Shan Zheng", "ZCOOL KuaiLe", "LXGW WenKai", "Microsoft YaHei",
+    "Segoe UI", sans-serif;
   font-weight: 400;
   letter-spacing: 0.01em;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
@@ -738,8 +740,6 @@ button {
   }
 }
 
-
-
 /* ---- Status Panel Lightweight Refresh (maintainable overrides) ---- */
 :root {
   --panel-border: rgba(255, 255, 255, 0.54);
@@ -986,7 +986,13 @@ button {
   border-radius: 4px 0 6px 0;
   border: 1px solid rgba(49, 81, 58, 0.3);
   background:
-    linear-gradient(135deg, transparent 42%, rgba(49, 81, 58, 0.42) 43%, rgba(49, 81, 58, 0.42) 57%, transparent 58%),
+    linear-gradient(
+      135deg,
+      transparent 42%,
+      rgba(49, 81, 58, 0.42) 43%,
+      rgba(49, 81, 58, 0.42) 57%,
+      transparent 58%
+    ),
     rgba(255, 255, 255, 0.64);
   cursor: nesw-resize;
   -webkit-app-region: no-drag;
@@ -1013,4 +1019,136 @@ button {
   .sensor-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Reusable hand-drawn chat input. The panel chat form can reuse these classes later. */
+.pet-stack {
+  width: 280px;
+  gap: 6px;
+}
+
+.handdraw-chat-form {
+  position: relative;
+  width: 280px;
+  min-height: 64px;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: inputIn 180ms ease-out;
+}
+
+.handdraw-chat-form.hidden {
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.handdraw-chat-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.handdraw-chat-fill {
+  fill: rgba(255, 255, 252, 0.92);
+}
+
+.handdraw-chat-stroke {
+  fill: none;
+  stroke: #2f4738;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.handdraw-chat-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px 30px;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 16px 12px;
+}
+
+.handdraw-chat-input {
+  height: 28px;
+  border: 0;
+  border-radius: 0;
+  padding: 0 8px;
+  color: #2b4535;
+  background: transparent;
+  font-family:
+    "Ma Shan Zheng", "ZCOOL KuaiLe", "LXGW WenKai", "Microsoft YaHei",
+    "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.handdraw-chat-input:focus {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.handdraw-icon-button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1.8px solid #2f4738;
+  border-radius: 50%;
+  color: #2f4738;
+  background: rgba(191, 233, 207, 0.86);
+  box-shadow: 0 2px 0 rgba(47, 71, 56, 0.18);
+  cursor: pointer;
+}
+
+.handdraw-icon-button svg {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
+.handdraw-icon-button path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.handdraw-icon-button:hover {
+  background: rgba(169, 223, 191, 0.95);
+  transform: translateY(-1px) rotate(-2deg);
+}
+
+.handdraw-icon-button:disabled {
+  opacity: 0.62;
+  transform: none;
+}
+
+.expand-button.handdraw-icon-button {
+  background: rgba(255, 243, 223, 0.92);
+}
+
+.expand-button.handdraw-icon-button:hover {
+  background: rgba(255, 232, 190, 0.98);
+}
+
+.chat-panel {
+  overflow: hidden;
+}
+
+.panel-resize-handle {
+  left: 0;
+  bottom: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 0 8px 0 18px;
+  cursor: nesw-resize;
 }

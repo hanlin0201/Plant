@@ -512,18 +512,13 @@ function syncResizeHandlePosition() {
   }
   const hidden = chatPanelEl.classList.contains("hidden");
   panelResizeHandleEl.classList.toggle("hidden", hidden);
-  if (hidden) {
-    return;
-  }
-  const panelRect = chatPanelEl.getBoundingClientRect();
-  panelResizeHandleEl.style.left = `${Math.round(panelRect.left)}px`;
-  panelResizeHandleEl.style.top = `${Math.round(panelRect.bottom - panelResizeHandleEl.offsetHeight)}px`;
 }
 
 function beginPanelResize(event) {
   if (!panelResizeHandleEl || event.button !== 0) {
     return;
   }
+  event.stopPropagation();
   const rect = chatPanelEl.getBoundingClientRect();
   panelResizeSession = {
     pointerId: event.pointerId,
@@ -541,7 +536,8 @@ function movePanelResize(event) {
     return;
   }
   const dx = panelResizeSession.startX - event.clientX;
-  const dy = event.clientY - panelResizeSession.startY;
+  event.stopPropagation();
+  const dy = panelResizeSession.startY - event.clientY;
   const width = panelResizeSession.startWidth + dx;
   const height = panelResizeSession.startHeight + dy;
   applyPanelSize(width, height);
@@ -551,6 +547,7 @@ function endPanelResize(event) {
   if (!panelResizeSession || panelResizeSession.pointerId !== event.pointerId) {
     return;
   }
+  event.stopPropagation();
   const rect = chatPanelEl.getBoundingClientRect();
   savePanelSize(rect.width, rect.height);
   panelResizeSession = null;
@@ -571,6 +568,7 @@ function initPanelResize() {
   panelResizeHandleEl.addEventListener("pointermove", movePanelResize);
   panelResizeHandleEl.addEventListener("pointerup", endPanelResize);
   panelResizeHandleEl.addEventListener("pointercancel", endPanelResize);
+  panelResizeHandleEl.addEventListener("click", (event) => event.stopPropagation());
   window.addEventListener("resize", () => {
     const rect = chatPanelEl.getBoundingClientRect();
     applyPanelSize(rect.width, rect.height);
@@ -974,7 +972,11 @@ function setChatPending(isPending) {
   inlineSendBtnEl.disabled = isPending;
   panelInputEl.disabled = isPending;
   panelSendBtnEl.disabled = isPending;
-  inlineSendBtnEl.textContent = isPending ? "..." : "→";
+  if (inlineSendBtnEl.querySelector("svg")) {
+    inlineSendBtnEl.setAttribute("aria-label", isPending ? "发送中" : "发送");
+  } else {
+    inlineSendBtnEl.textContent = isPending ? "..." : "→";
+  }
   panelSendBtnEl.textContent = isPending ? "发送中" : "发送";
 }
 
