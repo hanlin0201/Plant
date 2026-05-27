@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('plantPet', {
   endDrag() {
     ipcRenderer.send('plant-window:drag-end');
   },
+  setMousePassthrough(enabled) {
+    ipcRenderer.send('plant-window:set-ignore-mouse-events', Boolean(enabled));
+  },
   getRuntimeConfig() {
     const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
     const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";

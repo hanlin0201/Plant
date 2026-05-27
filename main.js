@@ -1,6 +1,14 @@
-const fs = require('fs');
-const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } = require('electron');
-const path = require('path');
+const fs = require("fs");
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  Tray,
+  ipcMain,
+  nativeImage,
+  screen,
+} = require("electron");
+const path = require("path");
 
 loadRuntimeEnv();
 
@@ -8,34 +16,32 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let dragSession = null;
+let isIgnoringMouseEvents = false;
 
 const WINDOW_SIZE = {
-  width: 520,
-  height: 420
+  width: 700,
+  height: 700,
 };
 
 // This Electron app does not use a Vite build step, so VITE_* variables are
 // not injected automatically. Load only the safe public Supabase config from
 // .env for the preload bridge; never read service_role, AI keys, or passwords.
 function loadRuntimeEnv() {
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(__dirname, ".env");
   if (!fs.existsSync(envPath)) {
     return;
   }
 
-  const allowedKeys = new Set([
-    'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_ANON_KEY'
-  ]);
+  const allowedKeys = new Set(["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"]);
 
-  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) {
+    if (!trimmed || trimmed.startsWith("#")) {
       continue;
     }
 
-    const separatorIndex = trimmed.indexOf('=');
+    const separatorIndex = trimmed.indexOf("=");
     if (separatorIndex === -1) {
       continue;
     }
@@ -52,16 +58,12 @@ function loadRuntimeEnv() {
 function parseEnvValue(value) {
   const trimmed = value.trim();
   const quote = trimmed[0];
-  if (
-    (quote === '"' || quote === "'") &&
-    trimmed.endsWith(quote)
-  ) {
+  if ((quote === '"' || quote === "'") && trimmed.endsWith(quote)) {
     return trimmed.slice(1, -1);
   }
 
   return trimmed;
 }
-
 
 // main.js is Electron's main process. It owns native desktop behavior:
 // transparent window creation, tray/menu lifecycle, hide-vs-quit behavior,
@@ -77,24 +79,24 @@ function createWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     hasShadow: false,
-    backgroundColor: '#00000000',
+    backgroundColor: "#00000000",
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
   });
 
-  mainWindow.setAlwaysOnTop(true, 'screen-saver');
-  mainWindow.loadFile('index.html');
+  mainWindow.setAlwaysOnTop(true, "screen-saver");
+  mainWindow.loadFile("index.html");
 
-  mainWindow.once('ready-to-show', () => {
+  mainWindow.once("ready-to-show", () => {
     placeWindowNearTray();
     refreshTrayMenu();
   });
 
-  mainWindow.on('close', (event) => {
+  mainWindow.on("close", (event) => {
     if (!isQuitting) {
       event.preventDefault();
       hidePlantWindow();
@@ -107,10 +109,10 @@ function createWindow() {
 
 function createTray() {
   tray = new Tray(createTrayIcon());
-  tray.setToolTip('桌面小植物');
+  tray.setToolTip("桌面小植物");
   tray.setContextMenu(buildTrayMenu());
 
-  tray.on('click', () => {
+  tray.on("click", () => {
     togglePlantWindow();
   });
 }
@@ -120,20 +122,20 @@ function buildTrayMenu() {
 
   return Menu.buildFromTemplate([
     {
-      label: isVisible ? '隐藏植物' : '显示植物',
-      click: () => togglePlantWindow()
+      label: isVisible ? "隐藏植物" : "显示植物",
+      click: () => togglePlantWindow(),
     },
     {
-      label: '随机模拟一次数据',
-      click: () => sendToRenderer('sensor:mock-once')
+      label: "随机模拟一次数据",
+      click: () => sendToRenderer("sensor:mock-once"),
     },
     {
-      type: 'separator'
+      type: "separator",
     },
     {
-      label: '退出程序',
-      click: quitApp
-    }
+      label: "退出程序",
+      click: quitApp,
+    },
   ]);
 }
 
@@ -152,7 +154,9 @@ function createTrayIcon() {
       <path d="M16 15c6-.2 9-3.4 9-7-6 .1-9.4 3.2-9 7Z" fill="#e3ffe9"/>
       <ellipse cx="16" cy="25" rx="8" ry="3" fill="#8b5e34"/>
     </svg>`;
-  return nativeImage.createFromDataURL(`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`);
+  return nativeImage.createFromDataURL(
+    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+  );
 }
 
 function placeWindowNearTray() {
@@ -168,7 +172,7 @@ function placeWindowNearTray() {
     x: Math.round(x + width - WINDOW_SIZE.width - margin),
     y: Math.round(y + height - WINDOW_SIZE.height - margin),
     width: WINDOW_SIZE.width,
-    height: WINDOW_SIZE.height
+    height: WINDOW_SIZE.height,
   });
 }
 
@@ -183,7 +187,7 @@ function showPlantWindow() {
   }
 
   mainWindow.moveTop();
-  mainWindow.webContents.send('plant-window:shown');
+  mainWindow.webContents.send("plant-window:shown");
   refreshTrayMenu();
 }
 
@@ -221,61 +225,70 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
 
-  app.on('activate', () => {
+  app.on("activate", () => {
     showPlantWindow();
   });
 });
 
-app.on('before-quit', () => {
+app.on("before-quit", () => {
   isQuitting = true;
 });
 
-app.on('window-all-closed', () => {
+app.on("window-all-closed", () => {
   // Keep the app alive in the tray unless the user chooses "退出程序".
 });
 
-ipcMain.handle('plant-window:hide', () => {
+ipcMain.handle("plant-window:hide", () => {
   hidePlantWindow();
 });
 
-ipcMain.handle('plant-window:show', () => {
+ipcMain.handle("plant-window:show", () => {
   showPlantWindow();
 });
 
-ipcMain.handle('plant-window:popup-menu', () => {
+ipcMain.handle("plant-window:popup-menu", () => {
   const menu = Menu.buildFromTemplate([
     {
-      label: '隐藏植物',
-      click: hidePlantWindow
+      label: "隐藏植物",
+      click: hidePlantWindow,
     },
     {
-      label: '随机模拟一次数据',
-      click: () => sendToRenderer('sensor:mock-once')
+      label: "随机模拟一次数据",
+      click: () => sendToRenderer("sensor:mock-once"),
     },
     {
-      type: 'separator'
+      type: "separator",
     },
     {
-      label: '退出程序',
-      click: quitApp
-    }
+      label: "退出程序",
+      click: quitApp,
+    },
   ]);
 
   menu.popup({ window: mainWindow });
 });
 
-ipcMain.on('plant-window:drag-start', (_event, point) => {
+ipcMain.on("plant-window:set-ignore-mouse-events", (_event, shouldIgnore) => {
+  if (!mainWindow || isIgnoringMouseEvents === shouldIgnore) {
+    return;
+  }
+
+  isIgnoringMouseEvents = shouldIgnore;
+  mainWindow.setIgnoreMouseEvents(shouldIgnore, { forward: true });
+});
+
+ipcMain.on("plant-window:drag-start", (_event, point) => {
   if (!mainWindow) {
     return;
   }
 
   dragSession = {
     startMouse: point,
-    startWindow: mainWindow.getPosition()
+    startWindow: mainWindow.getPosition(),
   };
 });
 
-ipcMain.on('plant-window:drag-move', (_event, point) => {
+ipcMain.on("plant-window:drag-move", (_event, point) => {
   if (!mainWindow || !dragSession) {
     return;
   }
@@ -283,9 +296,13 @@ ipcMain.on('plant-window:drag-move', (_event, point) => {
   const [startX, startY] = dragSession.startWindow;
   const dx = point.x - dragSession.startMouse.x;
   const dy = point.y - dragSession.startMouse.y;
-  mainWindow.setPosition(Math.round(startX + dx), Math.round(startY + dy), false);
+  mainWindow.setPosition(
+    Math.round(startX + dx),
+    Math.round(startY + dy),
+    false,
+  );
 });
 
-ipcMain.on('plant-window:drag-end', () => {
+ipcMain.on("plant-window:drag-end", () => {
   dragSession = null;
 });

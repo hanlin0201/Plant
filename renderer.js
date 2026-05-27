@@ -74,6 +74,8 @@ const PANEL_MIN_WIDTH = 260;
 const PANEL_MIN_HEIGHT = 320;
 const PANEL_DEFAULT_WIDTH = 280;
 const PANEL_DEFAULT_HEIGHT = 420;
+const PANEL_EDGE_MARGIN = 4;
+const PANEL_RESIZE_DRAG_SCALE = 1.65;
 
 const STORAGE_KEYS = {
   plantName: "desktopPlant.plantName",
@@ -117,6 +119,7 @@ const achievements = [
 let currentState = "normal";
 let lastReadingId = null;
 let bubbleTimer = null;
+let bubbleMode = "none";
 let dragState = null;
 let hasGreeted = false;
 let chatHistory = [];
@@ -137,6 +140,9 @@ let hasWaterRewardPending = false;
 let pendingActionTimer = null;
 let statusPanelInteractionsInitialized = false;
 let panelResizeSession = null;
+let mousePassthroughEnabled = false;
+let mousePassthroughLocked = false;
+let lastPointerClientPoint = null;
 
 function preloadPetAnimations() {
   const tasks = Object.values(PET_ANIMATIONS).map(
@@ -195,12 +201,12 @@ function handlePetClick() {
   if (hasWaterRewardPending) {
     hasWaterRewardPending = false;
     playPetAction("reward");
-    showBubble("奖励到手，继续加油。", { persist: true });
+    showBubble("\u5956\u52b1\u5230\u624b\uff0c\u7ee7\u7eed\u52a0\u6cb9\u3002", { mode: "chat" });
     return;
   }
 
   playPetAction("touch");
-  showBubble("我在呢。", { persist: true });
+  showBubble("\u6211\u5728\u5462\u3002", { mode: "chat" });
 }
 
 function isPlantDry(sensorData) {
@@ -244,22 +250,41 @@ function updateWaterRewardState(sensorData) {
   }
 }
 
+function hideBubble(options = {}) {
+  if (bubbleMode === "abnormal" && !options.force) {
+    return;
+  }
+
+  clearTimeout(bubbleTimer);
+  bubbleTimer = null;
+  bubbleMode = "none";
+  bubbleEl.classList.add("hidden");
+  syncMousePassthrough();
+}
+
 function showBubble(text, options = {}) {
   if (!text) {
     return;
   }
 
+  if (bubbleMode === "abnormal" && options.mode !== "abnormal") {
+    return;
+  }
+
   clearTimeout(bubbleTimer);
+  bubbleTimer = null;
+  bubbleMode = options.mode || "chat";
   if (bubbleTextEl) {
     bubbleTextEl.textContent = text;
   } else {
     bubbleEl.textContent = text;
   }
   bubbleEl.classList.remove("hidden");
+  syncMousePassthrough();
 
   if (!options.persist) {
     bubbleTimer = setTimeout(() => {
-      bubbleEl.classList.add("hidden");
+      hideBubble({ force: bubbleMode !== "abnormal" });
     }, 3000);
   }
 }
@@ -283,24 +308,27 @@ function setPlantState(state) {
 function showBubbleByEventType(eventType, sensorData = {}) {
   switch (eventType) {
     case "thirsty_warning":
-      showBubble("我有点渴了，可以给我浇点水吗？", { persist: true });
+      showBubble("\u6211\u6709\u70b9\u6e34\u4e86\uff0c\u53ef\u4ee5\u7ed9\u6211\u6d47\u70b9\u6c34\u5417\uff1f", { mode: "abnormal", persist: true });
       break;
     case "hot_warning":
-      showBubble("有点热，我想凉快一下。", { persist: true });
+      showBubble("\u6709\u70b9\u70ed\uff0c\u6211\u60f3\u51c9\u5feb\u4e00\u4e0b\u3002", { mode: "abnormal", persist: true });
       break;
     case "recovered":
-      showBubble("谢谢你，我感觉好多啦！", { persist: true });
-      break;
     case "touched":
-      showBubble("你刚刚摸到我啦，我在呢。", { persist: true });
-      break;
     case "normal_update":
+      clearAbnormalBubble();
       break;
     case "unknown":
       console.warn("[unknown plant event]", { eventType, sensorData });
       break;
     default:
       console.warn("[unsupported plant event]", { eventType, sensorData });
+  }
+}
+
+function clearAbnormalBubble() {
+  if (bubbleMode === "abnormal") {
+    hideBubble({ force: true });
   }
 }
 
@@ -325,6 +353,9 @@ async function pollPlantStatus() {
     }
 
     setPlantState(status.state);
+    if (bubbleMode === "abnormal" && status.state === "normal") {
+      clearAbnormalBubble();
+    }
 
     if (status.reading_id && status.reading_id !== lastReadingId) {
       lastReadingId = status.reading_id;
@@ -347,7 +378,6 @@ function showDataUnavailableHint() {
   }
 
   lastDataUnavailableAt = now;
-  showBubble("数据暂时不可用，先保持正常状态。");
 }
 
 function activateInput() {
@@ -356,6 +386,7 @@ function activateInput() {
   }
 
   inputBarEl.classList.remove("hidden");
+  syncMousePassthrough();
   window.setTimeout(() => inlineInputEl.focus(), 50);
 }
 
@@ -366,6 +397,8 @@ function deactivateInput() {
 
   inputBarEl.classList.add("hidden");
   inlineInputEl.value = "";
+  hideBubble();
+  syncMousePassthrough();
 }
 
 function expandToPanel() {
@@ -375,6 +408,7 @@ function expandToPanel() {
   renderPanelHistory();
   chatPanelEl.classList.remove("hidden");
   syncResizeHandlePosition();
+  syncMousePassthrough();
   window.setTimeout(() => {
     panelInputEl.focus();
     scrollChatHistory();
@@ -385,7 +419,8 @@ function collapseToInput() {
   panelExpanded = false;
   chatPanelEl.classList.add("hidden");
   syncResizeHandlePosition();
-  activateInput();
+  deactivateInput();
+  syncMousePassthrough();
 }
 
 function collapseChatUi() {
@@ -393,6 +428,8 @@ function collapseChatUi() {
   chatPanelEl.classList.add("hidden");
   syncResizeHandlePosition();
   inputBarEl.classList.add("hidden");
+  hideBubble();
+  syncMousePassthrough();
 }
 
 function setPanelTab(tab) {
@@ -496,9 +533,9 @@ function loadPanelSize() {
 function applyPanelSize(width, height) {
   const rect = chatPanelEl.getBoundingClientRect();
   const panelRight = window.innerWidth - rect.right;
-  const panelBottom = window.innerHeight - rect.bottom;
-  const maxWidth = Math.max(PANEL_MIN_WIDTH, window.innerWidth - panelRight - 12);
-  const maxHeight = Math.max(PANEL_MIN_HEIGHT, window.innerHeight - panelBottom - 12);
+  const panelTop = rect.top;
+  const maxWidth = Math.max(PANEL_MIN_WIDTH, window.innerWidth - panelRight - PANEL_EDGE_MARGIN);
+  const maxHeight = Math.max(PANEL_MIN_HEIGHT, window.innerHeight - panelTop - PANEL_EDGE_MARGIN);
   const nextWidth = Math.min(maxWidth, Math.max(PANEL_MIN_WIDTH, width));
   const nextHeight = Math.min(maxHeight, Math.max(PANEL_MIN_HEIGHT, height));
   chatPanelEl.style.width = `${nextWidth}px`;
@@ -518,8 +555,11 @@ function beginPanelResize(event) {
   if (!panelResizeHandleEl || event.button !== 0) {
     return;
   }
+  lockMousePassthrough();
   event.stopPropagation();
   const rect = chatPanelEl.getBoundingClientRect();
+  chatPanelEl.style.top = `${Math.round(rect.top)}px`;
+  chatPanelEl.style.bottom = "auto";
   panelResizeSession = {
     pointerId: event.pointerId,
     startX: event.clientX,
@@ -537,9 +577,9 @@ function movePanelResize(event) {
   }
   const dx = panelResizeSession.startX - event.clientX;
   event.stopPropagation();
-  const dy = panelResizeSession.startY - event.clientY;
-  const width = panelResizeSession.startWidth + dx;
-  const height = panelResizeSession.startHeight + dy;
+  const dy = event.clientY - panelResizeSession.startY;
+  const width = panelResizeSession.startWidth + dx * PANEL_RESIZE_DRAG_SCALE;
+  const height = panelResizeSession.startHeight + dy * PANEL_RESIZE_DRAG_SCALE;
   applyPanelSize(width, height);
 }
 
@@ -551,6 +591,7 @@ function endPanelResize(event) {
   const rect = chatPanelEl.getBoundingClientRect();
   savePanelSize(rect.width, rect.height);
   panelResizeSession = null;
+  unlockMousePassthrough({ clientX: event.clientX, clientY: event.clientY });
 }
 
 function initPanelResize() {
@@ -682,6 +723,58 @@ function initStatusPanelInteractions() {
   initPlantNameEditor();
   initAvatarUploader();
   syncResizeHandlePosition();
+}
+
+function getInteractiveElements() {
+  return [
+    plantEl,
+    bubbleEl,
+    inputBarEl,
+    chatPanelEl,
+  ].filter((element) => element && !element.classList.contains("hidden"));
+}
+
+function isPointInsideElement(point, element) {
+  const rect = element.getBoundingClientRect();
+  return (
+    point.clientX >= rect.left &&
+    point.clientX <= rect.right &&
+    point.clientY >= rect.top &&
+    point.clientY <= rect.bottom
+  );
+}
+
+function isPointInsideInteractiveUi(point) {
+  if (!point) {
+    return true;
+  }
+  return getInteractiveElements().some((element) => isPointInsideElement(point, element));
+}
+
+function setMousePassthrough(enabled) {
+  if (mousePassthroughEnabled === enabled) {
+    return;
+  }
+  mousePassthroughEnabled = enabled;
+  window.plantPet?.setMousePassthrough(enabled);
+}
+
+function syncMousePassthrough(point = lastPointerClientPoint) {
+  if (mousePassthroughLocked) {
+    setMousePassthrough(false);
+    return;
+  }
+  setMousePassthrough(!isPointInsideInteractiveUi(point));
+}
+
+function lockMousePassthrough() {
+  mousePassthroughLocked = true;
+  setMousePassthrough(false);
+}
+
+function unlockMousePassthrough(point = lastPointerClientPoint) {
+  mousePassthroughLocked = false;
+  syncMousePassthrough(point);
 }
 
 function renderStatusPanel() {
@@ -838,21 +931,25 @@ function handlePetDebugAction(event) {
   }
   if (action === "reward-pending") {
     hasWaterRewardPending = true;
-    showBubble("已设置奖励待领取，点击植物会触发 reward。", { persist: true });
+    showBubble("\u5df2\u8bbe\u7f6e\u5956\u52b1\u5f85\u9886\u53d6\uff0c\u70b9\u51fb\u690d\u7269\u4f1a\u89e6\u53d1 reward\u3002", { mode: "chat" });
     return;
   }
   if (action === "mock-dry") {
-    updateWaterRewardState({
+    const sensorData = {
       soil_moisture: plantThresholds.soilMoisture.min - 5,
-    });
-    showBubble("已模拟缺水状态。", { persist: true });
+    };
+    updateWaterRewardState(sensorData);
+    setPlantState("thirsty");
+    showBubbleByEventType("thirsty_warning", sensorData);
     return;
   }
   if (action === "mock-normal") {
-    updateWaterRewardState({
+    const sensorData = {
       soil_moisture: plantThresholds.soilMoisture.min + 5,
-    });
-    showBubble("已模拟恢复正常，下一次点击可触发奖励。", { persist: true });
+    };
+    updateWaterRewardState(sensorData);
+    setPlantState("normal");
+    showBubbleByEventType("recovered", sensorData);
   }
 }
 
@@ -887,7 +984,9 @@ async function submitPlantMessage({ inputEl, source }) {
   pushChatRecord("user", text);
   renderPanelHistory();
   setChatPending(true);
-  showBubble("...", { persist: true });
+  if (shouldShowChatBubble(source)) {
+    showBubble("...", { mode: "chat", persist: true });
+  }
 
   let result;
   try {
@@ -904,7 +1003,11 @@ async function submitPlantMessage({ inputEl, source }) {
 
   if (result?.reply) {
     pushChatRecord("plant", result.reply);
-    showBubble(result.reply, { persist: true });
+    if (shouldShowChatBubble(source)) {
+      showBubble(result.reply, { mode: "chat" });
+    } else {
+      hideBubble();
+    }
     renderPanelHistory();
     if (activePanelTab === "status") {
       renderStatusPanel();
@@ -939,8 +1042,20 @@ function pushChatRecord(role, text) {
   chatHistory = chatHistory.slice(-MAX_LOCAL_CHAT_HISTORY);
 }
 
+function shouldShowChatBubble(source) {
+  return (
+    source === "inline" &&
+    !panelExpanded &&
+    !inputBarEl.classList.contains("hidden")
+  );
+}
+
 function showSystemMessage(text, source) {
-  showBubble(text, { persist: true });
+  if (shouldShowChatBubble(source)) {
+    showBubble(text, { mode: "chat" });
+  } else {
+    hideBubble();
+  }
   if (source === "panel" || panelExpanded) {
     appendPanelMessage("system", text);
   }
@@ -989,7 +1104,10 @@ function beginDrag(event) {
     return;
   }
 
-  collapseChatUi();
+  lockMousePassthrough();
+  if (!panelExpanded) {
+    collapseChatUi();
+  }
   dragState = { startX: event.screenX, startY: event.screenY, moved: false, dragging: false };
   plantEl.setPointerCapture(event.pointerId);
 }
@@ -1014,7 +1132,7 @@ function moveDrag(event) {
   }
 }
 
-function endDrag() {
+function endDrag(event) {
   if (!dragState) {
     return;
   }
@@ -1022,10 +1140,13 @@ function endDrag() {
   const wasDrag = dragState.moved;
   dragState = null;
   window.plantPet?.endDrag();
+  unlockMousePassthrough({ clientX: event.clientX, clientY: event.clientY });
 
   if (!wasDrag) {
     handlePetClick();
-    activateInput();
+    if (!panelExpanded) {
+      activateInput();
+    }
   }
 }
 
@@ -1033,6 +1154,16 @@ plantEl.addEventListener("pointerdown", beginDrag);
 plantEl.addEventListener("pointermove", moveDrag);
 plantEl.addEventListener("pointerup", endDrag);
 plantEl.addEventListener("pointercancel", endDrag);
+
+document.addEventListener("pointermove", (event) => {
+  lastPointerClientPoint = { clientX: event.clientX, clientY: event.clientY };
+  syncMousePassthrough(lastPointerClientPoint);
+});
+
+document.addEventListener("pointerleave", () => {
+  lastPointerClientPoint = null;
+  syncMousePassthrough(null);
+});
 
 bubbleEl.addEventListener("click", (event) => {
   event.stopPropagation();
@@ -1062,6 +1193,10 @@ panelInputEl.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (panelExpanded) {
+    return;
+  }
+
   const isInsideChat =
     plantEl.contains(event.target) ||
     bubbleEl.contains(event.target) ||
@@ -1096,7 +1231,6 @@ plantEl.addEventListener("dblclick", () => {
 window.plantPet?.onWindowShown(() => {
   if (!hasGreeted) {
     hasGreeted = true;
-    showBubble("你好，我会根据环境数据陪着你。", { persist: true });
   }
   pollPlantStatus();
 });
@@ -1137,5 +1271,6 @@ setPlantState(currentState);
 renderStatusPanel();
 setPetAnimation("idle");
 preloadPetAnimations();
+syncMousePassthrough();
 pollPlantStatus();
 setInterval(pollPlantStatus, BACKEND_POLL_INTERVAL_MS);

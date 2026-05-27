@@ -9,7 +9,25 @@
   <body>
     <main id="app" class="app" aria-label="桌面小植物">
       <section id="chatPanel" class="chat-panel hidden" aria-label="小植物面板">
-        <button id="collapsePanelBtn" class="panel-collapse" type="button">收起</button>
+        <svg class="panel-shape" viewBox="0 0 320 430" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            class="panel-shape-fill"
+            d="M22 14 C54 5, 104 8, 154 10 C210 4, 270 8, 300 20 C314 48, 312 112, 310 178 C318 246, 313 340, 298 408 C256 422, 194 420, 142 418 C92 424, 44 420, 18 406 C6 350, 10 278, 8 216 C4 144, 8 50, 22 14 Z"
+          />
+          <path
+            class="panel-shape-stroke"
+            d="M22 14 C54 5, 104 8, 154 10 C210 4, 270 8, 300 20 C314 48, 312 112, 310 178 C318 246, 313 340, 298 408 C256 422, 194 420, 142 418 C92 424, 44 420, 18 406 C6 350, 10 278, 8 216 C4 144, 8 50, 22 14 Z"
+          />
+        </svg>
+
+        <button id="collapsePanelBtn" class="panel-collapse" type="button" aria-label="收起面板">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3.5 C17 3.5, 20.5 7, 20.5 12 C20.5 17, 17 20.5, 12 20.5 C7 20.5, 3.5 17, 3.5 12 C3.5 7, 7 3.5, 12 3.5 Z" />
+            <path d="M8.5 8.5 L15.5 15.5" />
+            <path d="M15.5 8.5 L8.5 15.5" />
+          </svg>
+        </button>
+
         <div class="panel-tabs" role="tablist" aria-label="面板切换">
           <button id="chatTabBtn" class="panel-tab active" type="button" role="tab" aria-selected="true">对话</button>
           <button id="statusTabBtn" class="panel-tab" type="button" role="tab" aria-selected="false">状态</button>
@@ -17,9 +35,21 @@
 
         <section id="chatView" class="panel-view">
           <div id="chatHistory" class="chat-history" aria-live="polite"></div>
-          <form id="panelChatForm" class="chat-form">
-            <input id="panelChatInput" class="chat-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
-            <button id="panelChatSendBtn" class="chat-send" type="submit">发送</button>
+          <form id="panelChatForm" class="chat-form handdraw-chat-form">
+            <svg class="handdraw-chat-shape" viewBox="0 0 280 64" preserveAspectRatio="none" aria-hidden="true">
+              <path
+                class="handdraw-chat-fill"
+                d="M18 12 C34 5, 72 6, 116 8 C162 4, 221 6, 260 12 C274 18, 278 32, 272 45 C262 59, 218 60, 170 57 C116 62, 58 59, 20 52 C8 44, 7 22, 18 12 Z"
+              />
+              <path
+                class="handdraw-chat-stroke"
+                d="M18 12 C34 5, 72 6, 116 8 C162 4, 221 6, 260 12 C274 18, 278 32, 272 45 C262 59, 218 60, 170 57 C116 62, 58 59, 20 52 C8 44, 7 22, 18 12 Z"
+              />
+            </svg>
+            <div class="handdraw-chat-content">
+              <input id="panelChatInput" class="chat-input handdraw-chat-input" type="text" placeholder="和小植物说句话" autocomplete="off" />
+              <button id="panelChatSendBtn" class="chat-send handdraw-icon-button send-button" type="submit" aria-label="发送">发送</button>
+            </div>
           </form>
         </section>
 

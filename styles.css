@@ -111,6 +111,7 @@ button {
 }
 
 .bubble.hidden {
+  display: none;
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
@@ -794,6 +795,7 @@ button {
 #statusView {
   overflow: auto;
   min-height: 0;
+  padding: 0 2px 4px;
 }
 
 .status-section {
@@ -903,9 +905,11 @@ button {
 .sensor-grid {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
+  min-width: 0;
 }
 
 .sensor-card {
+  min-width: 0;
   padding: 6px 7px;
   border: 1px solid rgba(49, 81, 58, 0.08);
   border-radius: 10px;
@@ -939,6 +943,7 @@ button {
   overflow-y: hidden;
   padding-bottom: 4px;
   scroll-behavior: smooth;
+  max-width: 100%;
 }
 
 .achievement-grid::-webkit-scrollbar {
@@ -1023,6 +1028,9 @@ button {
 
 /* Reusable hand-drawn chat input. The panel chat form can reuse these classes later. */
 .pet-stack {
+  top: 225px;
+  right: 8px;
+  bottom: auto;
   width: 280px;
   gap: 6px;
 }
@@ -1041,7 +1049,7 @@ button {
 }
 
 .handdraw-chat-form.hidden {
-  display: block;
+  display: none;
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -1151,4 +1159,167 @@ button {
   height: 18px;
   border-radius: 0 8px 0 18px;
   cursor: nesw-resize;
+}
+
+/* Hand-drawn panel shell and reusable form refinements. */
+.chat-panel {
+  top: 92px;
+  right: 150px;
+  bottom: auto;
+  padding: 28px 20px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+  max-height: 660px;
+}
+
+.panel-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.panel-shape-fill {
+  fill: rgba(255, 255, 252, 0.8);
+}
+
+.panel-shape-stroke {
+  fill: none;
+  stroke: #2f4738;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chat-panel > :not(.panel-shape) {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-panel .panel-view {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.chat-panel .chat-history {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 2px;
+}
+
+.chat-panel .chat-form.handdraw-chat-form {
+  margin-top: auto;
+}
+
+.panel-collapse {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #2f4738;
+  background: transparent;
+}
+
+.panel-collapse svg {
+  width: 26px;
+  height: 26px;
+  overflow: visible;
+}
+
+.panel-collapse path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.panel-tabs {
+  width: calc(100% - 54px);
+  min-width: 0;
+  margin: 4px 0 10px;
+  padding: 4px;
+  border: 2.4px solid #2f4738;
+  border-radius: 999px 888px 999px 820px;
+  background: rgba(255, 255, 252, 0.42);
+}
+
+.panel-tab {
+  min-width: 0;
+  border-radius: 999px 850px 999px 780px;
+  color: rgba(47, 71, 56, 0.78);
+  background: transparent;
+}
+
+.panel-tab.active {
+  border-color: transparent;
+  background: rgba(191, 233, 207, 0.78);
+  color: #24513a;
+}
+
+.chat-form.handdraw-chat-form {
+  width: 100%;
+  min-height: 64px;
+  display: block;
+  padding: 0;
+  border-top: 0;
+}
+
+.chat-form.handdraw-chat-form .handdraw-chat-content {
+  grid-template-columns: minmax(0, 1fr) 56px;
+}
+
+.chat-form.handdraw-chat-form .handdraw-icon-button {
+  width: 54px;
+  border-radius: 999px 900px 999px 850px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel-resize-handle {
+  left: 8px;
+  bottom: 8px;
+  width: 72px;
+  height: 72px;
+  z-index: 40;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: nesw-resize;
+  touch-action: none;
+}
+
+.panel-resize-handle::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  width: 20px;
+  height: 20px;
+  border-left: 2.4px solid #2f4738;
+  border-bottom: 2.4px solid #2f4738;
+  border-radius: 0 0 0 10px;
+}
+
+.panel-resize-handle::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+  width: 10px;
+  height: 10px;
+  border-left: 2.4px solid rgba(47, 71, 56, 0.7);
+  border-bottom: 2.4px solid rgba(47, 71, 56, 0.7);
+  border-radius: 0 0 0 6px;
 }
