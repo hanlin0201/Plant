@@ -205,7 +205,13 @@ function handlePetClick() {
     return;
   }
 
+  if (isQuickChatVisible()) {
+    collapseChatUi();
+    return;
+  }
+
   playPetAction("touch");
+  activateInput();
   showBubble("\u6211\u5728\u5462\u3002", { mode: "chat" });
 }
 
@@ -399,6 +405,14 @@ function deactivateInput() {
   inlineInputEl.value = "";
   hideBubble();
   syncMousePassthrough();
+}
+
+function isQuickChatVisible() {
+  return (
+    !panelExpanded &&
+    !inputBarEl.classList.contains("hidden") &&
+    bubbleMode !== "abnormal"
+  );
 }
 
 function expandToPanel() {
@@ -1144,9 +1158,6 @@ function endDrag(event) {
 
   if (!wasDrag) {
     handlePetClick();
-    if (!panelExpanded) {
-      activateInput();
-    }
   }
 }
 

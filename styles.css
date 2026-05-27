@@ -111,7 +111,6 @@ button {
 }
 
 .bubble.hidden {
-  display: none;
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
@@ -1032,7 +1031,29 @@ button {
   right: 8px;
   bottom: auto;
   width: 280px;
+  height: 250px;
+  display: block;
   gap: 6px;
+}
+
+.pet-stack .plant {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+.pet-stack .bubble {
+  position: absolute;
+  right: 0px;
+  bottom: 118px;
+  z-index: 2;
+}
+
+.pet-stack .input-bar {
+  position: absolute;
+  right: 0;
+  bottom: -54px;
+  z-index: 3;
 }
 
 .handdraw-chat-form {
@@ -1049,8 +1070,8 @@ button {
 }
 
 .handdraw-chat-form.hidden {
-  display: none;
-  visibility: hidden;
+  display: block;
+  visibility: visible;
   opacity: 0;
   pointer-events: none;
 }
