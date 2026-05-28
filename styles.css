@@ -497,10 +497,12 @@ button {
 .detail-back {
   align-self: flex-start;
   margin-bottom: 6px;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
   color: rgba(33, 53, 40, 0.72);
   background: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  line-height: 1.2;
   cursor: pointer;
 }
 
@@ -936,15 +938,20 @@ button {
 }
 
 .achievement-grid {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 2px 14px 6px 2px;
-  margin-right: -8px;
+  padding: 4px 22px 8px 4px;
+  margin-right: 0;
+  pointer-events: auto;
   scroll-behavior: smooth;
-  scroll-padding: 0 14px;
+  scroll-padding: 0 22px;
   max-width: 100%;
+  -webkit-app-region: no-drag;
+  overscroll-behavior-inline: contain;
 }
 
 .achievement-grid::-webkit-scrollbar {
@@ -961,6 +968,8 @@ button {
   height: 112px;
   padding: 8px;
   background: rgba(255, 255, 255, 0.72);
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
 }
 
 .achievement-card.locked {
@@ -1739,6 +1748,489 @@ button {
   color: #0284c7;
 }
 
+/* Companion streak milestone: scoped to the 朝夕相伴 card only. */
+.achievement-card.comp-ach-card {
+  position: relative;
+  flex: 0 0 118px;
+  width: 118px;
+  min-height: 124px;
+  height: 124px;
+  overflow: hidden;
+  padding: 10px 8px 8px;
+  border: 1.5px solid rgba(34, 197, 94, 0.35);
+  border-radius: 16px 14px 17px 15px;
+  background:
+    radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.95), transparent 24%),
+    radial-gradient(circle at 86% 18%, rgba(251, 113, 133, 0.22), transparent 24%),
+    linear-gradient(145deg, #fffdf8 0%, #ecfdf5 45%, #dcfce7 100%);
+  box-shadow:
+    0 10px 24px rgba(34, 197, 94, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #166534;
+  text-align: center;
+  transition:
+    transform 180ms ease,
+    box-shadow 220ms ease;
+}
+
+.achievement-card.comp-ach-card:hover {
+  transform: translateY(-1px) scale(1.015);
+  box-shadow:
+    0 14px 30px rgba(34, 197, 94, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.achievement-card.comp-ach-card:active {
+  transform: scale(0.97);
+}
+
+.achievement-card.comp-ach-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 8%, rgba(255, 255, 255, 0.12) 30%, rgba(255, 255, 255, 0.55) 44%, rgba(187, 247, 208, 0.25) 58%, transparent 80%);
+  background-size: 220% 100%;
+  animation: compShimmer 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes compShimmer {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+.comp-float {
+  position: absolute;
+  font-size: 10px;
+  opacity: 0.72;
+  pointer-events: none;
+  animation: compFloat 3s ease-in-out infinite;
+}
+
+.comp-float.f1 {
+  top: 12px;
+  right: 18px;
+}
+
+.comp-float.f2 {
+  top: 52px;
+  right: 22px;
+  animation-delay: 0.5s;
+}
+
+.comp-float.f3 {
+  bottom: 25px;
+  left: 17px;
+  animation-delay: 0.9s;
+}
+
+@keyframes compFloat {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0) scale(0.8);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-6px) scale(1.05);
+  }
+}
+
+.comp-icon-wrap {
+  position: relative;
+  z-index: 1;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1px auto 7px;
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #bbf7d0 55%, #86efac 100%);
+  box-shadow:
+    0 0 0 4px rgba(34, 197, 94, 0.1),
+    0 0 18px rgba(34, 197, 94, 0.18);
+  animation: compPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes compPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px rgba(34, 197, 94, 0.1),
+      0 0 18px rgba(34, 197, 94, 0.18);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px rgba(34, 197, 94, 0.16),
+      0 0 24px rgba(34, 197, 94, 0.28);
+    transform: scale(1.04);
+  }
+}
+
+.comp-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.comp-title,
+.comp-desc,
+.comp-badge {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.comp-title {
+  margin-bottom: 4px;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.comp-desc {
+  margin-bottom: 5px;
+  color: #5f8f6b;
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+
+.comp-badge {
+  width: fit-content;
+  margin: 0 auto;
+  padding: 2px 8px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 999px;
+  color: #15803d;
+  background: rgba(220, 252, 231, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.achievement-detail.comp-ach-detail-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(220, 252, 231, 0.9), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(251, 113, 133, 0.16), transparent 25%),
+    linear-gradient(180deg, #fffdf8 0%, #f0fdf4 40%, rgba(255, 255, 255, 0.88) 100%);
+}
+
+.comp-head {
+  padding: 18px 14px 9px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(220, 252, 231, 0.85) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.comp-detail-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #bbf7d0 55%, #86efac 100%);
+  box-shadow:
+    0 0 0 7px rgba(34, 197, 94, 0.11),
+    0 12px 26px rgba(34, 197, 94, 0.16);
+}
+
+.comp-detail-icon span {
+  font-size: 25px;
+}
+
+.comp-detail-title {
+  color: #166534;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.comp-level-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  border-radius: 999px;
+  color: #15803d;
+  background: rgba(220, 252, 231, 0.85);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.comp-condition {
+  margin-top: 5px;
+  color: #5f8f6b;
+  font-size: 12px;
+}
+
+.comp-status {
+  padding: 8px 14px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  color: #8e8e8e;
+  font-size: 12px;
+  text-align: center;
+}
+
+.comp-status strong {
+  color: #15803d;
+}
+
+.comp-track {
+  --comp-track-progress: calc((4 - 1) / 6 * 100%);
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(24px, 1fr));
+  align-items: center;
+  padding: 4px 10px 6px;
+  column-gap: 2px;
+}
+
+.comp-track::before,
+.comp-track::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 50%;
+  height: 2px;
+  border-radius: 99px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.comp-track::before {
+  background: #e5e7eb;
+}
+
+.comp-track::after {
+  right: auto;
+  width: var(--comp-track-progress);
+  max-width: calc(100% - 44px);
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+}
+
+.comp-node {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 150ms ease,
+    box-shadow 180ms ease;
+}
+
+.comp-node:hover {
+  transform: scale(1.08);
+}
+
+.comp-node.done {
+  color: #fff;
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.24);
+}
+
+.comp-node.current {
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.16),
+    0 6px 14px rgba(34, 197, 94, 0.22);
+  animation: compCurrentGlow 2.1s ease-in-out infinite;
+}
+
+@keyframes compCurrentGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(34, 197, 94, 0.16),
+      0 6px 14px rgba(34, 197, 94, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(34, 197, 94, 0.24),
+      0 8px 18px rgba(34, 197, 94, 0.3);
+  }
+}
+
+.comp-node.next {
+  border: 2px dashed rgba(34, 197, 94, 0.68);
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.comp-node.future {
+  border: 2px solid #e5e7eb;
+  color: #c7c7c7;
+  background: #fff;
+}
+
+.comp-node.selected::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid rgba(34, 197, 94, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.comp-info {
+  min-height: 24px;
+  padding: 6px 12px 14px;
+  color: #999;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.comp-info.active {
+  color: #15803d;
+}
+
+/* Compact milestone detail cards for the three animated achievements. */
+.achievement-detail.sun-ach-detail-card,
+.achievement-detail.water-ach-detail-card,
+.achievement-detail.comp-ach-detail-card {
+  border-radius: 14px;
+}
+
+.sun-ach-detail-head,
+.water-head,
+.comp-head {
+  padding: 12px 10px 6px;
+}
+
+.sun-ach-detail-icon,
+.water-detail-icon,
+.comp-detail-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+}
+
+.sun-ach-detail-icon {
+  box-shadow:
+    0 0 0 5px rgba(255, 219, 96, 0.1),
+    0 8px 18px rgba(245, 179, 1, 0.12),
+    0 0 18px rgba(255, 200, 40, 0.18);
+}
+
+.water-detail-icon {
+  box-shadow:
+    0 0 0 5px rgba(56, 189, 248, 0.1),
+    0 8px 18px rgba(20, 184, 166, 0.12);
+}
+
+.comp-detail-icon {
+  box-shadow:
+    0 0 0 5px rgba(34, 197, 94, 0.08),
+    0 8px 18px rgba(34, 197, 94, 0.12);
+}
+
+.sun-ach-detail-icon span,
+.water-detail-icon span,
+.comp-detail-icon span {
+  font-size: 20px;
+}
+
+.sun-ach-detail-title,
+.water-detail-title,
+.comp-detail-title {
+  font-size: 14px;
+}
+
+.sun-ach-level-badge,
+.water-level-badge,
+.comp-level-badge {
+  padding: 1px 7px;
+  font-size: 10px;
+}
+
+.sun-ach-condition,
+.water-condition,
+.comp-condition {
+  margin-top: 4px;
+  font-size: 10.5px;
+}
+
+.sun-ach-status,
+.water-status,
+.comp-status {
+  padding: 6px 10px 7px;
+  font-size: 11px;
+}
+
+.sun-ach-track,
+.water-track,
+.comp-track {
+  grid-template-columns: repeat(7, minmax(20px, 1fr));
+  padding: 3px 8px 5px;
+}
+
+.sun-ach-track::before,
+.sun-ach-track::after,
+.water-track::before,
+.water-track::after,
+.comp-track::before,
+.comp-track::after {
+  left: 18px;
+  right: 18px;
+}
+
+.sun-ach-track::after,
+.water-track::after,
+.comp-track::after {
+  max-width: calc(100% - 36px);
+}
+
+.sun-ach-node,
+.water-node,
+.comp-node {
+  width: 20px;
+  height: 20px;
+  font-size: 8.5px;
+}
+
+.sun-ach-node.current,
+.water-node.current,
+.comp-node.current {
+  transform: scale(1.1);
+}
+
+.sun-ach-node.selected::after,
+.water-node.selected::after,
+.comp-node.selected::after {
+  inset: -3px;
+  border-width: 1.25px;
+}
+
+.sun-ach-info,
+.water-info,
+.comp-info {
+  min-height: 20px;
+  padding: 4px 10px 10px;
+  font-size: 11px;
+}
+
 .panel-resize-handle {
   position: absolute;
   width: 14px;
@@ -1791,12 +2283,14 @@ button {
   height: 250px;
   display: block;
   gap: 6px;
+  pointer-events: none;
 }
 
 .pet-stack .plant {
   position: absolute;
   right: 0;
   bottom: 0;
+  pointer-events: auto;
 }
 
 .pet-stack .bubble {
@@ -1804,6 +2298,7 @@ button {
   right: 0px;
   bottom: 118px;
   z-index: 2;
+  pointer-events: auto;
 }
 
 .pet-stack .input-bar {
@@ -1811,6 +2306,12 @@ button {
   right: 0;
   bottom: -54px;
   z-index: 3;
+  pointer-events: auto;
+}
+
+.pet-stack .bubble.hidden,
+.pet-stack .input-bar.hidden {
+  pointer-events: none;
 }
 
 .handdraw-chat-form {

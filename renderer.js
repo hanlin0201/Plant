@@ -76,6 +76,7 @@ const PANEL_DEFAULT_WIDTH = 280;
 const PANEL_DEFAULT_HEIGHT = 420;
 const PANEL_EDGE_MARGIN = 4;
 const PANEL_RESIZE_DRAG_SCALE = 1.65;
+const INTERACTIVE_HIT_PADDING_PX = 14;
 
 const STORAGE_KEYS = {
   plantName: "desktopPlant.plantName",
@@ -114,6 +115,16 @@ const achievements = [
     current: 2,
     target: 4,
   },
+  {
+    id: "daily_companion",
+    icon: "\u{1F49A}",
+    title: "\u671d\u5915\u76f8\u4f34",
+    description: "\u8fde\u7eed\u6253\u5f00\u7a0b\u5e8f\u966a\u4f34\u690d\u7269",
+    condition: "\u6bcf\u4e2a\u81ea\u7136\u65e5\u9996\u6b21\u6253\u5f00\u7a0b\u5e8f\u8bb0\u4e3a\u5f53\u5929\u5df2\u966a\u4f34\uff1b\u4e2d\u65ad\u5219\u8fde\u7eed\u5929\u6570\u91cd\u65b0\u4ece 1 \u5f00\u59cb",
+    type: "progress",
+    current: 17,
+    target: 30,
+  },
 ];
 
 const SUN_ACHIEVEMENT_ID = "light_week";
@@ -128,6 +139,16 @@ const SUN_ACHIEVEMENT_LEVELS = [
 ];
 const WATER_ACHIEVEMENT_ID = "water_balance";
 const WATER_ACHIEVEMENT_LEVELS = [
+  { level: 1, days: 1 },
+  { level: 2, days: 3 },
+  { level: 3, days: 7 },
+  { level: 4, days: 15 },
+  { level: 5, days: 30 },
+  { level: 6, days: 90 },
+  { level: 7, days: 365 },
+];
+const COMPANION_ACHIEVEMENT_ID = "daily_companion";
+const COMPANION_ACHIEVEMENT_LEVELS = [
   { level: 1, days: 1 },
   { level: 2, days: 3 },
   { level: 3, days: 7 },
@@ -155,6 +176,7 @@ let statusError = "";
 let selectedAchievementId = null;
 let selectedSunAchievementLevelIndex = 2;
 let selectedWaterAchievementLevelIndex = 0;
+let selectedCompanionAchievementLevelIndex = 3;
 
 let currentPetAnimation = "idle";
 let isPetActionPlaying = false;
@@ -768,16 +790,24 @@ function getInteractiveElements() {
     bubbleEl,
     inputBarEl,
     chatPanelEl,
+    achievementListViewEl,
+    achievementGridEl,
+    achievementDetailViewEl,
+    achievementDetailCardEl,
+    achievementBackBtnEl,
   ].filter((element) => element && !element.classList.contains("hidden"));
 }
 
-function isPointInsideElement(point, element) {
+function isPointInsideElement(point, element, padding = INTERACTIVE_HIT_PADDING_PX) {
   const rect = element.getBoundingClientRect();
+  if (!rect.width && !rect.height) {
+    return false;
+  }
   return (
-    point.clientX >= rect.left &&
-    point.clientX <= rect.right &&
-    point.clientY >= rect.top &&
-    point.clientY <= rect.bottom
+    point.clientX >= rect.left - padding &&
+    point.clientX <= rect.right + padding &&
+    point.clientY >= rect.top - padding &&
+    point.clientY <= rect.bottom + padding
   );
 }
 
@@ -916,6 +946,13 @@ function renderAchievementCards() {
       achievementGridEl.appendChild(card);
       return;
     }
+    if (item.id === COMPANION_ACHIEVEMENT_ID) {
+      card.className = `achievement-card ${className} comp-ach-card`;
+      card.dataset.achievementId = item.id;
+      card.innerHTML = renderCompanionAchievementCard();
+      achievementGridEl.appendChild(card);
+      return;
+    }
 
     card.className = `achievement-card ${className}`;
     card.dataset.achievementId = item.id;
@@ -945,6 +982,10 @@ function renderAchievementDetail(achievementId) {
   }
   if (detail.id === WATER_ACHIEVEMENT_ID) {
     renderWaterAchievementDetail();
+    return;
+  }
+  if (detail.id === COMPANION_ACHIEVEMENT_ID) {
+    renderCompanionAchievementDetail();
     return;
   }
 
@@ -1176,6 +1217,112 @@ function bindWaterAchievementLevelNodes() {
     });
 }
 
+function getCompanionAchievementState() {
+  return {
+    currentLevel: 4,
+    streakDays: 17,
+  };
+}
+
+function renderCompanionAchievementCard() {
+  return `
+    <span class="comp-float f1">💚</span>
+    <span class="comp-float f2">🌱</span>
+    <span class="comp-float f3">💚</span>
+    <span class="comp-icon-wrap">
+      <span class="comp-icon">💚</span>
+    </span>
+    <span class="comp-title">朝夕相伴</span>
+    <span class="comp-desc">连续打开程序陪伴植物</span>
+    <span class="comp-badge">Lv.4</span>
+  `;
+}
+
+function renderCompanionAchievementDetail() {
+  const { currentLevel, streakDays } = getCompanionAchievementState();
+  const nextLevel = COMPANION_ACHIEVEMENT_LEVELS.find(
+    (item) => item.level === currentLevel + 1,
+  );
+  const statusText = nextLevel
+    ? `<strong>已连续陪伴 ${streakDays} 天</strong> · L${nextLevel.level} 还差 ${Math.max(0, nextLevel.days - streakDays)} 天`
+    : `<strong>已连续陪伴 ${streakDays} 天</strong> · 已满级`;
+
+  achievementDetailCardEl.className =
+    "status-card achievement-detail comp-ach-detail-card";
+  achievementDetailCardEl.innerHTML = `
+    <div class="comp-head">
+      <div class="comp-detail-icon"><span>💚</span></div>
+      <div>
+        <span class="comp-detail-title">朝夕相伴</span>
+        <span class="comp-level-badge">Lv.${currentLevel}</span>
+      </div>
+      <div class="comp-condition">连续打开程序陪伴植物</div>
+    </div>
+    <div class="comp-status">${statusText}</div>
+    <div class="comp-track" aria-label="朝夕相伴等级进度">
+      ${renderCompanionAchievementTrack(currentLevel)}
+    </div>
+    <div class="comp-info ${getSelectedCompanionLevelState(currentLevel).active ? "active" : ""}">
+      ${getSelectedCompanionLevelState(currentLevel).text}
+    </div>
+  `;
+  bindCompanionAchievementLevelNodes();
+}
+
+function renderCompanionAchievementTrack(currentLevel) {
+  return COMPANION_ACHIEVEMENT_LEVELS.map((item, index) => {
+    const done = item.level <= currentLevel;
+    const current = item.level === currentLevel;
+    const next = item.level === currentLevel + 1;
+    const nodeClass = [
+      "comp-node",
+      done ? "done" : "",
+      current ? "current" : "",
+      next ? "next" : "",
+      !done && !next ? "future" : "",
+      selectedCompanionAchievementLevelIndex === index ? "selected" : "",
+    ].filter(Boolean).join(" ");
+    const content = done && !current ? "✓" : item.level;
+
+    return `
+      <button class="${nodeClass}" type="button" data-comp-ach-level-index="${index}">${content}</button>
+    `;
+  }).join("");
+}
+
+function getSelectedCompanionLevelState(currentLevel) {
+  const level = COMPANION_ACHIEVEMENT_LEVELS[selectedCompanionAchievementLevelIndex] ||
+    COMPANION_ACHIEVEMENT_LEVELS[currentLevel - 1];
+  const { streakDays } = getCompanionAchievementState();
+  let text = `L${level.level} · 连续陪伴 ${level.days} 天`;
+  let active = false;
+
+  if (level.level < currentLevel) {
+    text += " · 已达成";
+    active = true;
+  } else if (level.level === currentLevel) {
+    text += " · 当前等级";
+    active = true;
+  } else {
+    text += ` · 还差 ${Math.max(0, level.days - streakDays)} 天`;
+  }
+
+  return { text, active };
+}
+
+function bindCompanionAchievementLevelNodes() {
+  achievementDetailCardEl
+    .querySelectorAll("[data-comp-ach-level-index]")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectedCompanionAchievementLevelIndex =
+          Number(button.getAttribute("data-comp-ach-level-index")) || 0;
+        renderCompanionAchievementDetail();
+      });
+    });
+}
+
 function onAchievementClick(event) {
   const sunLevelButton = event.target.closest("[data-sun-ach-level-index]");
   if (sunLevelButton && selectedAchievementId === SUN_ACHIEVEMENT_ID) {
@@ -1191,6 +1338,16 @@ function onAchievementClick(event) {
     renderWaterAchievementDetail();
     return;
   }
+  const companionLevelButton = event.target.closest("[data-comp-ach-level-index]");
+  if (
+    companionLevelButton &&
+    selectedAchievementId === COMPANION_ACHIEVEMENT_ID
+  ) {
+    selectedCompanionAchievementLevelIndex =
+      Number(companionLevelButton.getAttribute("data-comp-ach-level-index")) || 0;
+    renderCompanionAchievementDetail();
+    return;
+  }
 
   const button = event.target.closest("[data-achievement-id]");
   if (!button) {
@@ -1204,6 +1361,10 @@ function onAchievementClick(event) {
   if (selectedAchievementId === WATER_ACHIEVEMENT_ID) {
     selectedWaterAchievementLevelIndex =
       getWaterAchievementState().currentLevel - 1;
+  }
+  if (selectedAchievementId === COMPANION_ACHIEVEMENT_ID) {
+    selectedCompanionAchievementLevelIndex =
+      getCompanionAchievementState().currentLevel - 1;
   }
   renderAchievementArea();
 }
