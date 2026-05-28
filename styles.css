@@ -982,6 +982,399 @@ button {
   font-size: 10px;
 }
 
+/* Golden sunlight milestone: scoped to the 金光闪闪 card only. */
+.achievement-card.sun-ach-card {
+  position: relative;
+  flex: 0 0 138px;
+  min-height: 136px;
+  height: 136px;
+  overflow: hidden;
+  padding: 12px 10px 10px;
+  border: 1.5px solid rgba(245, 179, 1, 0.55);
+  border-radius: 16px 14px 17px 15px;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.9), transparent 22%),
+    radial-gradient(circle at 82% 16%, rgba(255, 233, 140, 0.7), transparent 20%),
+    linear-gradient(145deg, #fffef7 0%, #fff7d8 42%, #ffeaa4 100%);
+  box-shadow:
+    0 10px 24px rgba(245, 179, 1, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  color: #8a6400;
+  text-align: center;
+  transition:
+    transform 180ms ease,
+    box-shadow 220ms ease;
+}
+
+.achievement-card.sun-ach-card:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    0 14px 30px rgba(245, 179, 1, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.achievement-card.sun-ach-card:active {
+  transform: scale(0.97);
+}
+
+.achievement-card.sun-ach-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 8%,
+    rgba(255, 255, 255, 0.05) 26%,
+    rgba(255, 255, 255, 0.62) 40%,
+    rgba(255, 224, 120, 0.28) 50%,
+    rgba(255, 255, 255, 0.06) 62%,
+    transparent 80%
+  );
+  background-size: 220% 100%;
+  animation: sunShimmer 3.3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.achievement-card.sun-ach-card::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at center, rgba(255, 215, 90, 0.11), transparent 42%);
+  pointer-events: none;
+}
+
+@keyframes sunShimmer {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+.sun-spark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 230, 120, 0.95) 0%, rgba(255, 215, 0, 0.45) 40%, transparent 72%);
+  filter: blur(0.1px);
+  pointer-events: none;
+}
+
+.sun-spark.s1 {
+  top: 10px;
+  right: 16px;
+  animation: sunTwinkleSpin 2.4s ease-in-out infinite;
+}
+
+.sun-spark.s2 {
+  top: 48px;
+  right: 24px;
+  animation: sunTwinkleSpin 3s 0.5s ease-in-out infinite;
+}
+
+.sun-spark.s3 {
+  bottom: 28px;
+  left: 16px;
+  animation: sunTwinkleSpin 2.8s 1s ease-in-out infinite;
+}
+
+.sun-spark.s4 {
+  top: 22px;
+  left: 18px;
+  animation: sunTwinkleSpin 2.6s 0.2s ease-in-out infinite;
+}
+
+@keyframes sunTwinkleSpin {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  40% {
+    opacity: 0.9;
+    transform: scale(1) rotate(120deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+.sun-ach-icon-wrap {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px auto 8px;
+  border: 1.5px solid rgba(245, 179, 1, 0.52);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff8d5 0%, #ffe9a2 55%, #ffd56c 100%);
+  box-shadow:
+    0 0 0 4px rgba(255, 217, 80, 0.14),
+    0 0 18px rgba(255, 200, 40, 0.26);
+  animation: sunIconPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes sunIconPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px rgba(255, 217, 80, 0.12),
+      0 0 18px rgba(255, 200, 40, 0.24);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px rgba(255, 217, 80, 0.18),
+      0 0 24px rgba(255, 200, 40, 0.34);
+    transform: scale(1.04);
+  }
+}
+
+.sun-ach-icon {
+  font-size: 19px;
+  line-height: 1;
+  color: #c68e00;
+  text-shadow: 0 0 8px rgba(255, 211, 66, 0.42);
+}
+
+.sun-ach-title,
+.sun-ach-desc,
+.sun-ach-badge {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.sun-ach-title {
+  margin-bottom: 4px;
+  color: #8a6400;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.sun-ach-desc {
+  margin-bottom: 6px;
+  color: #a88933;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.sun-ach-badge {
+  width: fit-content;
+  margin: 0 auto;
+  padding: 2px 8px;
+  border: 1px solid rgba(245, 179, 1, 0.34);
+  border-radius: 999px;
+  color: #9d7100;
+  background: rgba(255, 245, 199, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.achievement-detail.sun-ach-detail-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(245, 179, 1, 0.28);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 248, 204, 0.9), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(255, 224, 120, 0.32), transparent 25%),
+    linear-gradient(180deg, #fffdf6 0%, #fffaf0 38%, rgba(255, 255, 255, 0.82) 100%);
+}
+
+.sun-ach-detail-head {
+  padding: 18px 14px 9px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(255, 245, 199, 0.9) 0%, rgba(255, 252, 244, 0.5) 70%, rgba(255, 255, 255, 0) 100%);
+}
+
+.sun-ach-detail-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  border: 1.5px solid rgba(245, 179, 1, 0.5);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff7d0 0%, #ffe79a 55%, #ffd260 100%);
+  box-shadow:
+    0 0 0 7px rgba(255, 219, 96, 0.12),
+    0 12px 26px rgba(245, 179, 1, 0.16),
+    0 0 25px rgba(255, 200, 40, 0.24);
+}
+
+.sun-ach-detail-icon span {
+  color: #c78d00;
+  font-size: 23px;
+  text-shadow: 0 0 10px rgba(255, 205, 70, 0.45);
+}
+
+.sun-ach-detail-title {
+  color: #8a6400;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sun-ach-level-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid rgba(245, 179, 1, 0.26);
+  border-radius: 999px;
+  color: #b17d00;
+  background: rgba(255, 239, 176, 0.8);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.sun-ach-condition {
+  margin-top: 5px;
+  color: #947a32;
+  font-size: 12px;
+}
+
+.sun-ach-status {
+  padding: 8px 14px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  color: #8e8e8e;
+  font-size: 12px;
+  text-align: center;
+}
+
+.sun-ach-status strong {
+  color: #c58b00;
+}
+
+.sun-ach-track {
+  --sun-track-progress: calc((3 - 1) / 6 * 100%);
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(24px, 1fr));
+  align-items: center;
+  padding: 4px 10px 6px;
+  column-gap: 2px;
+}
+
+.sun-ach-track::before,
+.sun-ach-track::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 50%;
+  height: 2px;
+  border-radius: 99px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.sun-ach-track::before {
+  background: #ececec;
+}
+
+.sun-ach-track::after {
+  right: auto;
+  width: var(--sun-track-progress);
+  max-width: calc(100% - 44px);
+  background: linear-gradient(90deg, #f2ba14 0%, #e6aa00 100%);
+}
+
+.sun-ach-node {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 150ms ease,
+    box-shadow 180ms ease;
+}
+
+.sun-ach-node:hover {
+  transform: scale(1.08);
+}
+
+.sun-ach-node.done {
+  color: #fff;
+  background: linear-gradient(180deg, #f7c62b 0%, #e8a600 100%);
+  box-shadow: 0 4px 12px rgba(245, 179, 1, 0.26);
+}
+
+.sun-ach-node.current {
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 3px rgba(245, 179, 1, 0.18),
+    0 6px 14px rgba(245, 179, 1, 0.24);
+  animation: sunCurrentGlow 2.1s ease-in-out infinite;
+}
+
+@keyframes sunCurrentGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(245, 179, 1, 0.16),
+      0 6px 14px rgba(245, 179, 1, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(245, 179, 1, 0.24),
+      0 8px 18px rgba(245, 179, 1, 0.28);
+  }
+}
+
+.sun-ach-node.next {
+  border: 2px dashed rgba(245, 179, 1, 0.7);
+  color: #c58b00;
+  background: #fff9e8;
+}
+
+.sun-ach-node.future {
+  border: 2px solid #ececec;
+  color: #c7c7c7;
+  background: #fff;
+}
+
+.sun-ach-node.selected::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid rgba(245, 179, 1, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.sun-ach-info {
+  min-height: 24px;
+  padding: 6px 12px 14px;
+  color: #999;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sun-ach-info.active {
+  color: #c58b00;
+}
+
 .panel-resize-handle {
   position: absolute;
   width: 14px;

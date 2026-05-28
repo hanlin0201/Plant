@@ -116,6 +116,17 @@ const achievements = [
   },
 ];
 
+const SUN_ACHIEVEMENT_ID = "light_week";
+const SUN_ACHIEVEMENT_LEVELS = [
+  { level: 1, days: 1 },
+  { level: 2, days: 3 },
+  { level: 3, days: 7 },
+  { level: 4, days: 15 },
+  { level: 5, days: 30 },
+  { level: 6, days: 90 },
+  { level: 7, days: 365 },
+];
+
 let currentState = "normal";
 let lastReadingId = null;
 let bubbleTimer = null;
@@ -132,6 +143,7 @@ let latestPlantStatus = null;
 let statusLoading = true;
 let statusError = "";
 let selectedAchievementId = null;
+let selectedSunAchievementLevelIndex = 2;
 
 let currentPetAnimation = "idle";
 let isPetActionPlaying = false;
@@ -879,6 +891,14 @@ function renderAchievementCards() {
         ? "locked"
         : "progress";
     card.type = "button";
+    if (item.id === SUN_ACHIEVEMENT_ID) {
+      card.className = `achievement-card ${className} sun-ach-card`;
+      card.dataset.achievementId = item.id;
+      card.innerHTML = renderSunAchievementCard();
+      achievementGridEl.appendChild(card);
+      return;
+    }
+
     card.className = `achievement-card ${className}`;
     card.dataset.achievementId = item.id;
     card.innerHTML = `
@@ -901,6 +921,11 @@ function renderAchievementDetail(achievementId) {
     return;
   }
 
+  if (detail.id === SUN_ACHIEVEMENT_ID) {
+    renderSunAchievementDetail();
+    return;
+  }
+
   achievementDetailCardEl.innerHTML = `
     <h3 class="profile-name">${detail.icon} ${detail.title}</h3>
     <p>${detail.description}</p>
@@ -911,13 +936,135 @@ function renderAchievementDetail(achievementId) {
   `;
 }
 
+function getSunAchievementState() {
+  return {
+    currentLevel: 3,
+    streakDays: 12,
+  };
+}
+
+function renderSunAchievementCard() {
+  return `
+    <span class="sun-spark s1"></span>
+    <span class="sun-spark s2"></span>
+    <span class="sun-spark s3"></span>
+    <span class="sun-spark s4"></span>
+    <span class="sun-ach-icon-wrap">
+      <span class="sun-ach-icon">✨</span>
+    </span>
+    <span class="sun-ach-title">金光闪闪</span>
+    <span class="sun-ach-desc">连续 7 天光照充足</span>
+    <span class="sun-ach-badge">Lv.3</span>
+  `;
+}
+
+function renderSunAchievementDetail() {
+  const { currentLevel, streakDays } = getSunAchievementState();
+  const nextLevel = SUN_ACHIEVEMENT_LEVELS.find(
+    (item) => item.level === currentLevel + 1,
+  );
+  const statusText = nextLevel
+    ? `<strong>已连续 ${streakDays} 天</strong> · L${nextLevel.level} 还差 ${Math.max(0, nextLevel.days - streakDays)} 天`
+    : `<strong>已连续 ${streakDays} 天</strong> · 已满级`;
+
+  achievementDetailCardEl.className =
+    "status-card achievement-detail sun-ach-detail-card";
+  achievementDetailCardEl.innerHTML = `
+    <div class="sun-ach-detail-head">
+      <div class="sun-ach-detail-icon"><span>✨</span></div>
+      <div>
+        <span class="sun-ach-detail-title">金光闪闪</span>
+        <span class="sun-ach-level-badge">Lv.${currentLevel}</span>
+      </div>
+      <div class="sun-ach-condition">连续保持光照充足</div>
+    </div>
+    <div class="sun-ach-status">${statusText}</div>
+    <div class="sun-ach-track" aria-label="金光闪闪等级进度">
+      ${renderSunAchievementTrack(currentLevel)}
+    </div>
+    <div class="sun-ach-info ${getSelectedSunLevelState(currentLevel).active ? "active" : ""}">
+      ${getSelectedSunLevelState(currentLevel).text}
+    </div>
+  `;
+  bindSunAchievementLevelNodes();
+}
+
+function renderSunAchievementTrack(currentLevel) {
+  return SUN_ACHIEVEMENT_LEVELS.map((item, index) => {
+    const done = item.level <= currentLevel;
+    const current = item.level === currentLevel;
+    const next = item.level === currentLevel + 1;
+    const nodeClass = [
+      "sun-ach-node",
+      done ? "done" : "",
+      current ? "current" : "",
+      next ? "next" : "",
+      !done && !next ? "future" : "",
+      selectedSunAchievementLevelIndex === index ? "selected" : "",
+    ].filter(Boolean).join(" ");
+    const content = done && !current ? "✓" : item.level;
+
+    return `
+      <button class="${nodeClass}" type="button" data-sun-ach-level-index="${index}" style="--sun-node-index:${index};">${content}</button>
+    `;
+  }).join("");
+}
+
+function getSelectedSunLevelState(currentLevel) {
+  const level = SUN_ACHIEVEMENT_LEVELS[selectedSunAchievementLevelIndex] ||
+    SUN_ACHIEVEMENT_LEVELS[currentLevel - 1];
+  const { streakDays } = getSunAchievementState();
+  let text = `L${level.level} · 连续 ${formatSunAchievementDays(level.days)}`;
+  let active = false;
+
+  if (level.level < currentLevel) {
+    text += " · 已达成";
+    active = true;
+  } else if (level.level === currentLevel) {
+    text += " · 当前等级";
+    active = true;
+  } else {
+    text += ` · 还差 ${Math.max(0, level.days - streakDays)} 天`;
+  }
+
+  return { text, active };
+}
+
+function formatSunAchievementDays(days) {
+  return `${days} 天`;
+}
+
+function bindSunAchievementLevelNodes() {
+  achievementDetailCardEl
+    .querySelectorAll("[data-sun-ach-level-index]")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectedSunAchievementLevelIndex =
+          Number(button.getAttribute("data-sun-ach-level-index")) || 0;
+        renderSunAchievementDetail();
+      });
+    });
+}
+
 function onAchievementClick(event) {
+  const sunLevelButton = event.target.closest("[data-sun-ach-level-index]");
+  if (sunLevelButton && selectedAchievementId === SUN_ACHIEVEMENT_ID) {
+    selectedSunAchievementLevelIndex =
+      Number(sunLevelButton.getAttribute("data-sun-ach-level-index")) || 0;
+    renderSunAchievementDetail();
+    return;
+  }
+
   const button = event.target.closest("[data-achievement-id]");
   if (!button) {
     return;
   }
 
   selectedAchievementId = button.dataset.achievementId;
+  if (selectedAchievementId === SUN_ACHIEVEMENT_ID) {
+    selectedSunAchievementLevelIndex = getSunAchievementState().currentLevel - 1;
+  }
   renderAchievementArea();
 }
 
@@ -1188,6 +1335,7 @@ collapsePanelBtnEl.addEventListener("click", collapseToInput);
 chatTabBtnEl.addEventListener("click", () => setPanelTab("chat"));
 statusTabBtnEl.addEventListener("click", () => setPanelTab("status"));
 achievementGridEl.addEventListener("click", onAchievementClick);
+achievementDetailCardEl.addEventListener("click", onAchievementClick);
 achievementBackBtnEl.addEventListener("click", backToAchievementList);
 petDebugToolsEl?.addEventListener("click", handlePetDebugAction);
 
