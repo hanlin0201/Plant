@@ -126,6 +126,16 @@ const SUN_ACHIEVEMENT_LEVELS = [
   { level: 6, days: 90 },
   { level: 7, days: 365 },
 ];
+const WATER_ACHIEVEMENT_ID = "water_balance";
+const WATER_ACHIEVEMENT_LEVELS = [
+  { level: 1, days: 1 },
+  { level: 2, days: 3 },
+  { level: 3, days: 7 },
+  { level: 4, days: 15 },
+  { level: 5, days: 30 },
+  { level: 6, days: 90 },
+  { level: 7, days: 365 },
+];
 
 let currentState = "normal";
 let lastReadingId = null;
@@ -144,6 +154,7 @@ let statusLoading = true;
 let statusError = "";
 let selectedAchievementId = null;
 let selectedSunAchievementLevelIndex = 2;
+let selectedWaterAchievementLevelIndex = 0;
 
 let currentPetAnimation = "idle";
 let isPetActionPlaying = false;
@@ -898,6 +909,13 @@ function renderAchievementCards() {
       achievementGridEl.appendChild(card);
       return;
     }
+    if (item.id === WATER_ACHIEVEMENT_ID) {
+      card.className = `achievement-card ${className} water-ach-card`;
+      card.dataset.achievementId = item.id;
+      card.innerHTML = renderWaterAchievementCard();
+      achievementGridEl.appendChild(card);
+      return;
+    }
 
     card.className = `achievement-card ${className}`;
     card.dataset.achievementId = item.id;
@@ -925,7 +943,12 @@ function renderAchievementDetail(achievementId) {
     renderSunAchievementDetail();
     return;
   }
+  if (detail.id === WATER_ACHIEVEMENT_ID) {
+    renderWaterAchievementDetail();
+    return;
+  }
 
+  achievementDetailCardEl.className = "status-card achievement-detail";
   achievementDetailCardEl.innerHTML = `
     <h3 class="profile-name">${detail.icon} ${detail.title}</h3>
     <p>${detail.description}</p>
@@ -1047,12 +1070,125 @@ function bindSunAchievementLevelNodes() {
     });
 }
 
+function getWaterAchievementState() {
+  return {
+    currentLevel: 1,
+    streakDays: 2,
+  };
+}
+
+function renderWaterAchievementCard() {
+  return `
+    <span class="water-drop d1"></span>
+    <span class="water-drop d2"></span>
+    <span class="water-drop d3"></span>
+    <span class="water-icon-wrap">
+      <span class="water-icon">💧</span>
+    </span>
+    <span class="water-title">雨露均沾</span>
+    <span class="water-desc">连续保持土壤湿度适宜</span>
+    <span class="water-badge">Lv.1</span>
+  `;
+}
+
+function renderWaterAchievementDetail() {
+  const { currentLevel, streakDays } = getWaterAchievementState();
+  const nextLevel = WATER_ACHIEVEMENT_LEVELS.find(
+    (item) => item.level === currentLevel + 1,
+  );
+  const statusText = nextLevel
+    ? `<strong>已连续 ${streakDays} 天</strong> · L${nextLevel.level} 还差 ${Math.max(0, nextLevel.days - streakDays)} 天`
+    : `<strong>已连续 ${streakDays} 天</strong> · 已满级`;
+
+  achievementDetailCardEl.className =
+    "status-card achievement-detail water-ach-detail-card";
+  achievementDetailCardEl.innerHTML = `
+    <div class="water-head">
+      <div class="water-detail-icon"><span>💧</span></div>
+      <div>
+        <span class="water-detail-title">雨露均沾</span>
+        <span class="water-level-badge">Lv.${currentLevel}</span>
+      </div>
+      <div class="water-condition">连续保持土壤湿度适宜</div>
+    </div>
+    <div class="water-status">${statusText}</div>
+    <div class="water-track" aria-label="雨露均沾等级进度">
+      ${renderWaterAchievementTrack(currentLevel)}
+    </div>
+    <div class="water-info ${getSelectedWaterLevelState(currentLevel).active ? "active" : ""}">
+      ${getSelectedWaterLevelState(currentLevel).text}
+    </div>
+  `;
+  bindWaterAchievementLevelNodes();
+}
+
+function renderWaterAchievementTrack(currentLevel) {
+  return WATER_ACHIEVEMENT_LEVELS.map((item, index) => {
+    const done = item.level <= currentLevel;
+    const current = item.level === currentLevel;
+    const next = item.level === currentLevel + 1;
+    const nodeClass = [
+      "water-node",
+      done ? "done" : "",
+      current ? "current" : "",
+      next ? "next" : "",
+      !done && !next ? "future" : "",
+      selectedWaterAchievementLevelIndex === index ? "selected" : "",
+    ].filter(Boolean).join(" ");
+    const content = done && !current ? "✓" : item.level;
+
+    return `
+      <button class="${nodeClass}" type="button" data-water-ach-level-index="${index}">${content}</button>
+    `;
+  }).join("");
+}
+
+function getSelectedWaterLevelState(currentLevel) {
+  const level = WATER_ACHIEVEMENT_LEVELS[selectedWaterAchievementLevelIndex] ||
+    WATER_ACHIEVEMENT_LEVELS[currentLevel - 1];
+  const { streakDays } = getWaterAchievementState();
+  let text = `L${level.level} · 连续 ${level.days} 天`;
+  let active = false;
+
+  if (level.level < currentLevel) {
+    text += " · 已达成";
+    active = true;
+  } else if (level.level === currentLevel) {
+    text += " · 当前等级";
+    active = true;
+  } else {
+    text += ` · 还差 ${Math.max(0, level.days - streakDays)} 天`;
+  }
+
+  return { text, active };
+}
+
+function bindWaterAchievementLevelNodes() {
+  achievementDetailCardEl
+    .querySelectorAll("[data-water-ach-level-index]")
+    .forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectedWaterAchievementLevelIndex =
+          Number(button.getAttribute("data-water-ach-level-index")) || 0;
+        renderWaterAchievementDetail();
+      });
+    });
+}
+
 function onAchievementClick(event) {
   const sunLevelButton = event.target.closest("[data-sun-ach-level-index]");
   if (sunLevelButton && selectedAchievementId === SUN_ACHIEVEMENT_ID) {
     selectedSunAchievementLevelIndex =
       Number(sunLevelButton.getAttribute("data-sun-ach-level-index")) || 0;
     renderSunAchievementDetail();
+    return;
+  }
+  const waterLevelButton = event.target.closest("[data-water-ach-level-index]");
+  if (waterLevelButton && selectedAchievementId === WATER_ACHIEVEMENT_ID) {
+    selectedWaterAchievementLevelIndex =
+      Number(waterLevelButton.getAttribute("data-water-ach-level-index")) || 0;
+    renderWaterAchievementDetail();
     return;
   }
 
@@ -1064,6 +1200,10 @@ function onAchievementClick(event) {
   selectedAchievementId = button.dataset.achievementId;
   if (selectedAchievementId === SUN_ACHIEVEMENT_ID) {
     selectedSunAchievementLevelIndex = getSunAchievementState().currentLevel - 1;
+  }
+  if (selectedAchievementId === WATER_ACHIEVEMENT_ID) {
+    selectedWaterAchievementLevelIndex =
+      getWaterAchievementState().currentLevel - 1;
   }
   renderAchievementArea();
 }

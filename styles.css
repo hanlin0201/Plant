@@ -940,8 +940,10 @@ button {
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 4px;
+  padding: 2px 14px 6px 2px;
+  margin-right: -8px;
   scroll-behavior: smooth;
+  scroll-padding: 0 14px;
   max-width: 100%;
 }
 
@@ -985,11 +987,12 @@ button {
 /* Golden sunlight milestone: scoped to the 金光闪闪 card only. */
 .achievement-card.sun-ach-card {
   position: relative;
-  flex: 0 0 138px;
-  min-height: 136px;
-  height: 136px;
+  flex: 0 0 118px;
+  width: 118px;
+  min-height: 124px;
+  height: 124px;
   overflow: hidden;
-  padding: 12px 10px 10px;
+  padding: 10px 8px 8px;
   border: 1.5px solid rgba(245, 179, 1, 0.55);
   border-radius: 16px 14px 17px 15px;
   background:
@@ -1007,7 +1010,7 @@ button {
 }
 
 .achievement-card.sun-ach-card:hover {
-  transform: translateY(-2px) scale(1.03);
+  transform: translateY(-1px) scale(1.015);
   box-shadow:
     0 14px 30px rgba(245, 179, 1, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -1105,12 +1108,12 @@ button {
 .sun-ach-icon-wrap {
   position: relative;
   z-index: 1;
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 2px auto 8px;
+  margin: 1px auto 7px;
   border: 1.5px solid rgba(245, 179, 1, 0.52);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff8d5 0%, #ffe9a2 55%, #ffd56c 100%);
@@ -1154,15 +1157,15 @@ button {
 .sun-ach-title {
   margin-bottom: 4px;
   color: #8a6400;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .sun-ach-desc {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   color: #a88933;
-  font-size: 10px;
+  font-size: 9.5px;
   line-height: 1.35;
 }
 
@@ -1373,6 +1376,367 @@ button {
 
 .sun-ach-info.active {
   color: #c58b00;
+}
+
+/* Water care milestone: scoped to the 雨露均沾 card only. */
+.achievement-card.water-ach-card {
+  position: relative;
+  flex: 0 0 118px;
+  width: 118px;
+  min-height: 124px;
+  height: 124px;
+  overflow: hidden;
+  padding: 10px 8px 8px;
+  border: 1.5px solid rgba(56, 189, 248, 0.42);
+  border-radius: 16px 14px 17px 15px;
+  background:
+    radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.95), transparent 24%),
+    radial-gradient(circle at 85% 20%, rgba(186, 240, 255, 0.75), transparent 22%),
+    linear-gradient(145deg, #f8feff 0%, #e0f7ff 45%, #ccfbf1 100%);
+  box-shadow:
+    0 10px 24px rgba(56, 189, 248, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #075985;
+  text-align: center;
+  transition:
+    transform 180ms ease,
+    box-shadow 220ms ease;
+}
+
+.achievement-card.water-ach-card:hover {
+  transform: translateY(-1px) scale(1.015);
+  box-shadow:
+    0 14px 30px rgba(56, 189, 248, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.achievement-card.water-ach-card:active {
+  transform: scale(0.97);
+}
+
+.achievement-card.water-ach-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 8%, rgba(255, 255, 255, 0.1) 28%, rgba(255, 255, 255, 0.58) 42%, rgba(125, 211, 252, 0.22) 55%, transparent 78%);
+  background-size: 220% 100%;
+  animation: waterShimmer 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes waterShimmer {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+.water-drop {
+  position: absolute;
+  width: 7px;
+  height: 9px;
+  border-radius: 50% 50% 60% 60%;
+  background: radial-gradient(circle at 35% 25%, #fff 0%, #7dd3fc 38%, rgba(20, 184, 166, 0.65) 100%);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.water-drop.d1 {
+  top: 12px;
+  right: 18px;
+  animation: waterDropFloat 2.8s ease-in-out infinite;
+}
+
+.water-drop.d2 {
+  top: 52px;
+  right: 24px;
+  animation: waterDropFloat 3.2s 0.4s ease-in-out infinite;
+}
+
+.water-drop.d3 {
+  bottom: 24px;
+  left: 18px;
+  animation: waterDropFloat 3s 0.8s ease-in-out infinite;
+}
+
+@keyframes waterDropFloat {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0) scale(0.75);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-6px) scale(1);
+  }
+}
+
+.water-icon-wrap {
+  position: relative;
+  z-index: 1;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1px auto 7px;
+  border: 1.5px solid rgba(56, 189, 248, 0.45);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #bae6fd 55%, #5eead4 100%);
+  box-shadow:
+    0 0 0 4px rgba(56, 189, 248, 0.12),
+    0 0 18px rgba(20, 184, 166, 0.2);
+  animation: waterPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes waterPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px rgba(56, 189, 248, 0.12),
+      0 0 18px rgba(20, 184, 166, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 7px rgba(56, 189, 248, 0.18),
+      0 0 24px rgba(20, 184, 166, 0.3);
+    transform: scale(1.04);
+  }
+}
+
+.water-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.water-title,
+.water-desc,
+.water-badge {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.water-title {
+  margin-bottom: 4px;
+  color: #075985;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.water-desc {
+  margin-bottom: 5px;
+  color: #4b9bb5;
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+
+.water-badge {
+  width: fit-content;
+  margin: 0 auto;
+  padding: 2px 8px;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  border-radius: 999px;
+  color: #036987;
+  background: rgba(224, 247, 255, 0.9);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.achievement-detail.water-ach-detail-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(224, 247, 255, 0.9), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(153, 246, 228, 0.35), transparent 25%),
+    linear-gradient(180deg, #f8feff 0%, #f0fdff 40%, rgba(255, 255, 255, 0.86) 100%);
+}
+
+.water-head {
+  padding: 18px 14px 9px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(224, 247, 255, 0.9) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.water-detail-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  border: 1.5px solid rgba(56, 189, 248, 0.45);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #bae6fd 55%, #5eead4 100%);
+  box-shadow:
+    0 0 0 7px rgba(56, 189, 248, 0.12),
+    0 12px 26px rgba(20, 184, 166, 0.16);
+}
+
+.water-detail-icon span {
+  font-size: 25px;
+}
+
+.water-detail-title {
+  color: #075985;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.water-level-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
+  color: #036987;
+  background: rgba(224, 247, 255, 0.85);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.water-condition {
+  margin-top: 5px;
+  color: #4b9bb5;
+  font-size: 12px;
+}
+
+.water-status {
+  padding: 8px 14px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  color: #8e8e8e;
+  font-size: 12px;
+  text-align: center;
+}
+
+.water-status strong {
+  color: #0284c7;
+}
+
+.water-track {
+  --water-track-progress: 0%;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(24px, 1fr));
+  align-items: center;
+  padding: 4px 10px 6px;
+  column-gap: 2px;
+}
+
+.water-track::before,
+.water-track::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 50%;
+  height: 2px;
+  border-radius: 99px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.water-track::before {
+  background: #e5e7eb;
+}
+
+.water-track::after {
+  right: auto;
+  width: var(--water-track-progress);
+  max-width: calc(100% - 44px);
+  background: linear-gradient(90deg, #38bdf8 0%, #14b8a6 100%);
+}
+
+.water-node {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 150ms ease,
+    box-shadow 180ms ease;
+}
+
+.water-node:hover {
+  transform: scale(1.08);
+}
+
+.water-node.done {
+  color: #fff;
+  background: linear-gradient(180deg, #38bdf8 0%, #14b8a6 100%);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.24);
+}
+
+.water-node.current {
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 3px rgba(56, 189, 248, 0.16),
+    0 6px 14px rgba(20, 184, 166, 0.22);
+  animation: waterCurrentGlow 2.1s ease-in-out infinite;
+}
+
+@keyframes waterCurrentGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(56, 189, 248, 0.16),
+      0 6px 14px rgba(20, 184, 166, 0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(56, 189, 248, 0.24),
+      0 8px 18px rgba(20, 184, 166, 0.3);
+  }
+}
+
+.water-node.next {
+  border: 2px dashed rgba(20, 184, 166, 0.68);
+  color: #0284c7;
+  background: #ecfeff;
+}
+
+.water-node.future {
+  border: 2px solid #e5e7eb;
+  color: #c7c7c7;
+  background: #fff;
+}
+
+.water-node.selected::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid rgba(56, 189, 248, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.water-info {
+  min-height: 24px;
+  padding: 6px 12px 14px;
+  color: #999;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.water-info.active {
+  color: #0284c7;
 }
 
 .panel-resize-handle {
