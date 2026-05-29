@@ -3,9 +3,23 @@ import { sendPlantMessage as sendPlantMessageToApi } from "./services/chatApi.js
 import {
   buildSensorMetrics,
   normalizeSensorData,
-  plantThresholds,
 } from "./services/plantStatusService.js";
-import { getPlantProfile, getCompanionDays } from "./services/plantProfile.js";
+import { getCompanionDays } from "./services/plantProfile.js";
+import { getPlantAssetCandidates } from "./services/assetResolver.js";
+import {
+  getAvailablePlantSpecies,
+  getSelectedPlantProfile,
+  getSelectedSpeciesConfig,
+  getSelectedSpeciesId,
+  setSelectedSpeciesId,
+} from "./services/plantSelectionService.js";
+import { evaluatePlantStatus } from "./services/plantEvaluator.js";
+import {
+  getPetActionAssetCandidates,
+  getPetStateAssetCandidates,
+} from "./services/petAssetService.js";
+import { getCurrentUser, isLoggedIn } from "./services/authService.js";
+import { loadRemoteSelectionOrFallback } from "./services/userPlantService.js";
 
 const PET_ANIMATIONS = {
   idle: { src: "./assets/pet/idle_fixed.gif", duration: null, loop: true },
@@ -53,6 +67,8 @@ const profileAvatarInputEl = document.querySelector("#profileAvatarInput");
 const profileSpeciesEl = document.querySelector("#profileSpecies");
 const profileScientificEl = document.querySelector("#profileScientific");
 const profileCompanionDaysNumberEl = document.querySelector("#profileCompanionDaysNumber");
+const plantSpeciesSelectEl = document.querySelector("#plantSpeciesSelect");
+const plantSpeciesDescriptionEl = document.querySelector("#plantSpeciesDescription");
 const panelResizeHandleEl = document.querySelector("#panelResizeHandle");
 const sensorGridEl = document.querySelector("#sensorGrid");
 const achievementGridEl = document.querySelector("#achievementGrid");
@@ -84,7 +100,7 @@ const STORAGE_KEYS = {
   panelSize: "desktopPlant.panelSize",
 };
 
-const plantProfile = getPlantProfile();
+let plantProfile = getSelectedPlantProfile();
 
 const achievements = [
   {
@@ -188,6 +204,7 @@ let panelResizeSession = null;
 let mousePassthroughEnabled = false;
 let mousePassthroughLocked = false;
 let lastPointerClientPoint = null;
+let currentPetImageSrc = PET_ANIMATIONS.idle.src;
 
 function preloadPetAnimations() {
   const tasks = Object.values(PET_ANIMATIONS).map(
@@ -209,13 +226,85 @@ function setPetAnimation(animationName) {
   }
 
   currentPetAnimation = animationName;
-  petAnimationEl.src = config.src;
+  setPetImageWithFallback(
+    getPetActionAssetCandidates(getSelectedSpeciesConfig(), animationName),
+    `action:${animationName}`,
+  );
   const pose = PET_ANIMATION_POSE[animationName] || PET_ANIMATION_POSE.idle;
   petAnimationEl.style.setProperty("--pet-offset-x", `${pose.x}px`);
   petAnimationEl.style.setProperty("--pet-offset-y", `${pose.y}px`);
   petAnimationEl.style.setProperty("--pet-scale", `${pose.scale}`);
   petAnimationEl.classList.remove("hidden");
   plantEmojiEl.classList.add("hidden");
+}
+
+function setPetStateImage(state) {
+  if (isPetActionPlaying) {
+    return;
+  }
+
+  currentPetAnimation = "idle";
+  setPetImageWithFallback(
+    getPetStateAssetCandidates(getSelectedSpeciesConfig(), state),
+    `state:${state}`,
+  );
+  const pose = PET_ANIMATION_POSE.idle;
+  petAnimationEl.style.setProperty("--pet-offset-x", `${pose.x}px`);
+  petAnimationEl.style.setProperty("--pet-offset-y", `${pose.y}px`);
+  petAnimationEl.style.setProperty("--pet-scale", `${pose.scale}`);
+  petAnimationEl.classList.remove("hidden");
+  plantEmojiEl.classList.add("hidden");
+}
+
+function setPetImageWithFallback(candidates, context) {
+  const uniqueCandidates = Array.from(new Set((candidates || []).filter(Boolean)));
+  if (!uniqueCandidates.length) {
+    console.warn("[pet asset] no candidates", { context });
+    return;
+  }
+
+  const serializedCandidates = JSON.stringify(uniqueCandidates);
+  if (
+    petAnimationEl.dataset.assetContext === context &&
+    petAnimationEl.dataset.assetCandidates === serializedCandidates
+  ) {
+    return;
+  }
+
+  petAnimationEl.dataset.assetCandidates = serializedCandidates;
+  petAnimationEl.dataset.assetIndex = "0";
+  petAnimationEl.dataset.assetContext = context;
+  petAnimationEl.src = uniqueCandidates[0];
+}
+
+function handlePetImageLoad() {
+  currentPetImageSrc = petAnimationEl.src;
+}
+
+function handlePetImageError() {
+  let candidates = [];
+  try {
+    candidates = JSON.parse(petAnimationEl.dataset.assetCandidates || "[]");
+  } catch (_error) {
+    candidates = [];
+  }
+
+  const currentIndex = Number.parseInt(petAnimationEl.dataset.assetIndex || "0", 10);
+  const nextIndex = currentIndex + 1;
+  if (nextIndex < candidates.length) {
+    petAnimationEl.dataset.assetIndex = String(nextIndex);
+    petAnimationEl.src = candidates[nextIndex];
+    return;
+  }
+
+  console.warn("[pet asset] failed to load all candidates", {
+    context: petAnimationEl.dataset.assetContext,
+    candidates,
+  });
+
+  if (currentPetImageSrc && petAnimationEl.src !== currentPetImageSrc) {
+    petAnimationEl.src = currentPetImageSrc;
+  }
 }
 
 function playPetAction(animationName) {
@@ -234,7 +323,7 @@ function playPetAction(animationName) {
 
   pendingActionTimer = window.setTimeout(() => {
     isPetActionPlaying = false;
-    setPetAnimation("idle");
+    setPetStateImage(currentState);
   }, config.duration);
 }
 
@@ -262,8 +351,9 @@ function handlePetClick() {
 
 function isPlantDry(sensorData) {
   const normalized = normalizeSensorData(sensorData);
+  const threshold = getSelectedSpeciesConfig().thresholds.soilMoisture;
   return typeof normalized.soilMoisture === "number"
-    ? normalized.soilMoisture < plantThresholds.soilMoisture.min
+    ? normalized.soilMoisture < threshold.min
     : false;
 }
 
@@ -273,9 +363,10 @@ function isPlantWaterNormal(sensorData) {
     return false;
   }
   const soil = normalized.soilMoisture;
+  const threshold = getSelectedSpeciesConfig().thresholds.soilMoisture;
   return (
-    soil >= plantThresholds.soilMoisture.min &&
-    soil <= plantThresholds.soilMoisture.max
+    soil >= threshold.min &&
+    soil <= threshold.max
   );
 }
 
@@ -299,6 +390,40 @@ function updateWaterRewardState(sensorData) {
   if (normalNow) {
     wasPlantDry = false;
   }
+}
+
+function evaluateCurrentPlantStatus(sensorData) {
+  return evaluatePlantStatus(sensorData, getSelectedSpeciesConfig());
+}
+
+function applyEvaluatedPlantStatus(status, options = {}) {
+  const sensorData = status?.sensor_data || {};
+  const evaluation = evaluateCurrentPlantStatus(sensorData);
+  latestPlantStatus = {
+    ...(status || {}),
+    sensor_data: sensorData,
+    state: evaluation.state,
+    event_type: evaluation.eventType,
+    evaluation,
+  };
+
+  updateWaterRewardState(sensorData);
+  renderStatusPanel();
+  setPlantState(evaluation.state);
+
+  if (evaluation.state === "normal") {
+    clearAbnormalBubble();
+  }
+
+  if (options.showBubble) {
+    if (evaluation.state === "normal") {
+      showBubble(evaluation.message, { mode: "chat" });
+    } else if (evaluation.message) {
+      showBubble(evaluation.message, { mode: "abnormal", persist: true });
+    }
+  }
+
+  return evaluation;
 }
 
 function hideBubble(options = {}) {
@@ -344,16 +469,28 @@ function setPlantState(state) {
   if (!state || state === "unknown") {
     currentState = "unknown";
     plantEl.className = "plant unknown";
+    setPetStateImage("unknown");
     return;
   }
 
-  if (!["normal", "thirsty", "hot"].includes(state)) {
+  if (
+    ![
+      "normal",
+      "thirsty",
+      "weak_light",
+      "strong_light",
+      "hot",
+      "cold",
+      "humidity_warning",
+    ].includes(state)
+  ) {
     console.warn("[unknown plant state]", state);
     return;
   }
 
   currentState = state;
   plantEl.className = `plant ${state}`;
+  setPetStateImage(state);
 }
 
 function showBubbleByEventType(eventType, sensorData = {}) {
@@ -362,7 +499,14 @@ function showBubbleByEventType(eventType, sensorData = {}) {
       showBubble("\u6211\u6709\u70b9\u6e34\u4e86\uff0c\u53ef\u4ee5\u7ed9\u6211\u6d47\u70b9\u6c34\u5417\uff1f", { mode: "abnormal", persist: true });
       break;
     case "hot_warning":
+    case "temperature_warning":
       showBubble("\u6709\u70b9\u70ed\uff0c\u6211\u60f3\u51c9\u5feb\u4e00\u4e0b\u3002", { mode: "abnormal", persist: true });
+      break;
+    case "light_warning":
+      showBubble("今天的光照有点不太合适，我想换个舒服的位置。", { mode: "abnormal", persist: true });
+      break;
+    case "humidity_warning":
+      showBubble("空气湿度有点不太合适，我在努力适应。", { mode: "abnormal", persist: true });
       break;
     case "recovered":
     case "touched":
@@ -393,24 +537,27 @@ async function pollPlantStatus() {
     const status = await getPlantStatus(DEVICE_ID);
     statusLoading = false;
     statusError = "";
-    latestPlantStatus = status;
-    updateWaterRewardState(status?.sensor_data || {});
-    renderStatusPanel();
+    const evaluation = applyEvaluatedPlantStatus(status);
 
-    if (!status || !status.state || status.state === "unknown") {
+    if (!status || evaluation.state === "unknown") {
       setPlantState("normal");
       showDataUnavailableHint();
       return;
     }
 
-    setPlantState(status.state);
-    if (bubbleMode === "abnormal" && status.state === "normal") {
+    if (bubbleMode === "abnormal" && evaluation.state === "normal") {
       clearAbnormalBubble();
     }
 
     if (status.reading_id && status.reading_id !== lastReadingId) {
       lastReadingId = status.reading_id;
-      showBubbleByEventType(status.event_type, status.sensor_data);
+      if (evaluation.state === "normal") {
+        clearAbnormalBubble();
+      } else if (evaluation.message) {
+        showBubble(evaluation.message, { mode: "abnormal", persist: true });
+      } else {
+        showBubbleByEventType(evaluation.eventType, status.sensor_data);
+      }
     }
   } catch (error) {
     statusLoading = false;
@@ -542,11 +689,7 @@ function getPlantDisplayName(profile) {
 }
 
 function getDefaultAvatarCandidates() {
-  return [
-    "./assets/pet/idle_fixed.gif",
-    "./assets/pet/touch_fixed.gif",
-    "./assets/pet/reward_fixed.gif",
-  ];
+  return getPlantAssetCandidates(plantProfile?.speciesId, "normal");
 }
 
 function getPlantAvatarSrc() {
@@ -717,6 +860,81 @@ function initPlantNameEditor() {
   profileNameInputEl.addEventListener("blur", commitPlantNameEditing);
 }
 
+function renderPlantSpeciesOptions() {
+  if (!plantSpeciesSelectEl) {
+    return;
+  }
+
+  const selectedSpeciesId = getSelectedSpeciesId();
+  plantSpeciesSelectEl.innerHTML = getAvailablePlantSpecies()
+    .map(
+      (species) =>
+        `<option value="${species.id}" ${species.id === selectedSpeciesId ? "selected" : ""}>${species.name}</option>`,
+    )
+    .join("");
+}
+
+function renderPlantSpeciesDescription() {
+  if (!plantSpeciesDescriptionEl) {
+    return;
+  }
+
+  const speciesConfig = getSelectedSpeciesConfig();
+  const scientificName = speciesConfig.scientificName
+    ? ` · ${speciesConfig.scientificName}`
+    : "";
+  plantSpeciesDescriptionEl.textContent = `${speciesConfig.description}${scientificName}`;
+}
+
+function initPlantSpeciesSelector() {
+  if (!plantSpeciesSelectEl) {
+    return;
+  }
+
+  renderPlantSpeciesOptions();
+  renderPlantSpeciesDescription();
+  plantSpeciesSelectEl.addEventListener("change", (event) => {
+    const nextSpeciesId = setSelectedSpeciesId(event.target.value);
+    plantSpeciesSelectEl.value = nextSpeciesId;
+    refreshSelectedPlant();
+    window.plantPet?.setPlantSelection(nextSpeciesId);
+  });
+}
+
+function refreshSelectedPlant(speciesId) {
+  if (speciesId) {
+    setSelectedSpeciesId(speciesId);
+  }
+
+  plantProfile = getSelectedPlantProfile();
+  renderPlantSpeciesOptions();
+  renderPlantSpeciesDescription();
+
+  if (latestPlantStatus?.sensor_data) {
+    applyEvaluatedPlantStatus(latestPlantStatus);
+    return;
+  }
+
+  renderStatusPanel();
+  setPetStateImage(currentState);
+}
+
+async function restoreSelectedPlantFromRemoteOnStartup() {
+  if (!isLoggedIn()) {
+    return;
+  }
+
+  const user = getCurrentUser();
+  if (!user?.id) {
+    return;
+  }
+
+  const result = await loadRemoteSelectionOrFallback(user.id, DEVICE_ID);
+  if (result.status === "remote" || result.status === "fallback_default") {
+    refreshSelectedPlant(result.speciesId);
+  }
+}
+
 function onAvatarLoadError(event) {
   const target = event.currentTarget;
   if (!(target instanceof HTMLImageElement)) {
@@ -780,6 +998,7 @@ function initStatusPanelInteractions() {
   statusPanelInteractionsInitialized = true;
   initPanelResize();
   initPlantNameEditor();
+  initPlantSpeciesSelector();
   initAvatarUploader();
   syncResizeHandlePosition();
 }
@@ -860,7 +1079,10 @@ function renderStatusPanel() {
   statusErrorEl.classList.toggle("hidden", !statusError);
   statusErrorEl.textContent = statusError;
 
-  const metrics = buildSensorMetrics(latestPlantStatus?.sensor_data || {});
+  const metrics = buildSensorMetrics(
+    latestPlantStatus?.sensor_data || {},
+    getSelectedSpeciesConfig().thresholds,
+  );
   renderSensorCards(metrics);
   renderAchievementArea();
 }
@@ -1374,6 +1596,34 @@ function backToAchievementList() {
   renderAchievementArea();
 }
 
+function buildMockSensorData(overrides = {}) {
+  const thresholds = getSelectedSpeciesConfig().thresholds;
+  return {
+    soil_moisture: midpoint(thresholds.soilMoisture),
+    temperature: midpoint(thresholds.temperature),
+    light: midpoint(thresholds.light),
+    air_humidity: midpoint(thresholds.humidity),
+    battery: 88,
+    ...overrides,
+  };
+}
+
+function midpoint(threshold) {
+  return Number(((threshold.min + threshold.max) / 2).toFixed(1));
+}
+
+function applyMockSensorData(sensorData) {
+  const mockStatus = {
+    device_id: DEVICE_ID,
+    plant_id: null,
+    reading_id: `mock-${Date.now()}`,
+    sensor_data: sensorData,
+    trigger_type: "manual_test",
+    created_at: new Date().toISOString(),
+  };
+  applyEvaluatedPlantStatus(mockStatus, { showBubble: true });
+}
+
 function handlePetDebugAction(event) {
   const button = event.target.closest("[data-debug-action]");
   if (!button) {
@@ -1397,21 +1647,34 @@ function handlePetDebugAction(event) {
     return;
   }
   if (action === "mock-dry") {
-    const sensorData = {
-      soil_moisture: plantThresholds.soilMoisture.min - 5,
-    };
-    updateWaterRewardState(sensorData);
-    setPlantState("thirsty");
-    showBubbleByEventType("thirsty_warning", sensorData);
+    const thresholds = getSelectedSpeciesConfig().thresholds;
+    applyMockSensorData(
+      buildMockSensorData({
+        soil_moisture: thresholds.soilMoisture.min - 5,
+      }),
+    );
+    return;
+  }
+  if (action === "mock-low-light") {
+    const thresholds = getSelectedSpeciesConfig().thresholds;
+    applyMockSensorData(
+      buildMockSensorData({
+        light: Math.max(0, thresholds.light.min - 1000),
+      }),
+    );
+    return;
+  }
+  if (action === "mock-hot") {
+    const thresholds = getSelectedSpeciesConfig().thresholds;
+    applyMockSensorData(
+      buildMockSensorData({
+        temperature: thresholds.temperature.max + 5,
+      }),
+    );
     return;
   }
   if (action === "mock-normal") {
-    const sensorData = {
-      soil_moisture: plantThresholds.soilMoisture.min + 5,
-    };
-    updateWaterRewardState(sensorData);
-    setPlantState("normal");
-    showBubbleByEventType("recovered", sensorData);
+    applyMockSensorData(buildMockSensorData());
   }
 }
 
@@ -1613,6 +1876,8 @@ plantEl.addEventListener("pointerdown", beginDrag);
 plantEl.addEventListener("pointermove", moveDrag);
 plantEl.addEventListener("pointerup", endDrag);
 plantEl.addEventListener("pointercancel", endDrag);
+petAnimationEl.addEventListener("load", handlePetImageLoad);
+petAnimationEl.addEventListener("error", handlePetImageError);
 
 document.addEventListener("pointermove", (event) => {
   lastPointerClientPoint = { clientX: event.clientX, clientY: event.clientY };
@@ -1695,19 +1960,29 @@ window.plantPet?.onWindowShown(() => {
   pollPlantStatus();
 });
 
+window.plantPet?.onPlantSelectionChanged((payload = {}) => {
+  refreshSelectedPlant(payload.speciesId);
+});
+
+window.plantPet?.onAuthChanged(() => {
+  // Demo auth currently only affects the manager window; keep this hook as the
+  // sync point for the future logged-in desktop experience.
+});
+
 window.petDebug = {
   setRewardPending(value = true) {
     hasWaterRewardPending = Boolean(value);
   },
   simulateDry() {
-    updateWaterRewardState({
-      soil_moisture: plantThresholds.soilMoisture.min - 5,
-    });
+    const thresholds = getSelectedSpeciesConfig().thresholds;
+    applyMockSensorData(
+      buildMockSensorData({
+        soil_moisture: thresholds.soilMoisture.min - 5,
+      }),
+    );
   },
   simulateRecovered() {
-    updateWaterRewardState({
-      soil_moisture: plantThresholds.soilMoisture.min + 5,
-    });
+    applyMockSensorData(buildMockSensorData());
   },
   playTouch() {
     playPetAction("touch");
@@ -1732,5 +2007,6 @@ renderStatusPanel();
 setPetAnimation("idle");
 preloadPetAnimations();
 syncMousePassthrough();
+void restoreSelectedPlantFromRemoteOnStartup();
 pollPlantStatus();
 setInterval(pollPlantStatus, BACKEND_POLL_INTERVAL_MS);

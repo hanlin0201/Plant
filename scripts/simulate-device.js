@@ -8,6 +8,7 @@ const basePayload = {
   plant_id: "plant_001",
   light: 350,
   air_humidity: 55,
+  fertility: 800,
   battery: 87,
 };
 

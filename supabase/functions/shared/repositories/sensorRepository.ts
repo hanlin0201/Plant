@@ -76,6 +76,7 @@ class SupabaseSensorRepository implements SensorRepository {
         temperature: payload.temperature,
         light: payload.light ?? null,
         air_humidity: payload.air_humidity ?? null,
+        fertility: payload.fertility ?? null,
         battery: payload.battery ?? null,
         trigger_type: payload.trigger_type,
         state,

@@ -36,6 +36,7 @@ export function validateDeviceDataPayload(
     temperature: requiredNumber(raw.temperature, "temperature"),
     light: optionalNumber(raw.light, "light"),
     air_humidity: optionalNumber(raw.air_humidity, "air_humidity"),
+    fertility: optionalNumber(raw.fertility ?? raw.ec, "fertility"),
     battery: optionalNumber(raw.battery, "battery"),
     trigger_type: triggerType,
   };

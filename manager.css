@@ -1,0 +1,222 @@
+:root {
+  color-scheme: light;
+  font-family: "Microsoft YaHei", "LXGW WenKai", "Segoe UI", sans-serif;
+  color: #213528;
+  background: #f7fbf5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(216, 245, 224, 0.9), transparent 24%),
+    radial-gradient(circle at 88% 4%, rgba(255, 236, 190, 0.7), transparent 24%),
+    #f7fbf5;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.manager-shell {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.manager-hero {
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: rgba(33, 53, 40, 0.56);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+}
+
+h2 {
+  font-size: 16px;
+}
+
+.manager-hero p:last-child {
+  margin-top: 8px;
+  color: rgba(33, 53, 40, 0.66);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.manager-card {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid rgba(49, 81, 58, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 14px 34px rgba(26, 45, 31, 0.08);
+}
+
+.section-heading,
+.user-row,
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #24513a;
+  background: #dff4e6;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.field-label {
+  display: block;
+  margin: 14px 0 6px;
+  color: rgba(33, 53, 40, 0.68);
+  font-size: 12px;
+}
+
+.login-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.text-input {
+  height: 36px;
+  border: 1px solid rgba(49, 81, 58, 0.16);
+  border-radius: 12px;
+  padding: 0 12px;
+  color: #213528;
+  background: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
+.text-input:focus {
+  border-color: rgba(31, 143, 88, 0.56);
+}
+
+.primary-button,
+.ghost-button,
+.species-card {
+  cursor: pointer;
+}
+
+.primary-button,
+.ghost-button {
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 14px;
+}
+
+.primary-button {
+  color: #fff;
+  background: #4fa36c;
+}
+
+.ghost-button {
+  color: #31513a;
+  background: rgba(223, 244, 230, 0.86);
+}
+
+.user-row {
+  margin-top: 10px;
+  color: rgba(33, 53, 40, 0.7);
+  font-size: 12px;
+}
+
+.species-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.species-card {
+  width: 100%;
+  border: 1px solid rgba(49, 81, 58, 0.12);
+  border-radius: 16px;
+  padding: 12px;
+  color: #213528;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: left;
+}
+
+.species-card.selected {
+  border-color: rgba(31, 143, 88, 0.5);
+  background: rgba(232, 245, 236, 0.95);
+}
+
+.species-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 800;
+}
+
+.species-desc {
+  margin-top: 6px;
+  color: rgba(33, 53, 40, 0.64);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.info-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.info-row {
+  color: rgba(33, 53, 40, 0.66);
+  font-size: 13px;
+}
+
+.info-row strong {
+  color: #213528;
+}
+
+.muted-note {
+  color: rgba(33, 53, 40, 0.52);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sync-status {
+  margin-top: 10px;
+  color: rgba(33, 53, 40, 0.58);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sync-status.success {
+  color: #2f855a;
+}
+
+.sync-status.warning {
+  color: #a16207;
+}
+
+.sync-status.error {
+  color: #b42318;
+}

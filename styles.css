@@ -516,6 +516,37 @@ button {
   color: rgba(33, 53, 40, 0.76);
 }
 
+.plant-species-picker {
+  display: grid;
+  gap: 5px;
+}
+
+.plant-species-select {
+  width: 100%;
+  height: 28px;
+  border: 1px solid rgba(49, 81, 58, 0.16);
+  border-radius: 10px;
+  padding: 0 9px;
+  color: rgba(33, 53, 40, 0.86);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.plant-species-select:focus {
+  border-color: rgba(31, 143, 88, 0.52);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.plant-species-description {
+  margin: 0;
+  color: rgba(33, 53, 40, 0.62);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
 .pet-debug-tools {
   opacity: 0.72;
 }

@@ -21,6 +21,7 @@ export interface DeviceDataPayload {
   temperature: number;
   light?: number;
   air_humidity?: number;
+  fertility?: number;
   battery?: number;
   trigger_type: TriggerType;
 }
@@ -33,6 +34,7 @@ export interface PlantReading {
   temperature: number;
   light: number | null;
   air_humidity: number | null;
+  fertility: number | null;
   battery: number | null;
   trigger_type: TriggerType;
   state: PlantState;
@@ -50,6 +52,7 @@ export interface PlantStatusResponse {
     temperature: number;
     light: number | null;
     air_humidity: number | null;
+    fertility: number | null;
     battery: number | null;
   };
   state: PlantState;

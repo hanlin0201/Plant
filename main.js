@@ -13,6 +13,7 @@ const path = require("path");
 loadRuntimeEnv();
 
 let mainWindow = null;
+let managerWindow = null;
 let tray = null;
 let isQuitting = false;
 let dragSession = null;
@@ -21,6 +22,11 @@ let isIgnoringMouseEvents = false;
 const WINDOW_SIZE = {
   width: 700,
   height: 700,
+};
+
+const MANAGER_WINDOW_SIZE = {
+  width: 520,
+  height: 680,
 };
 
 // This Electron app does not use a Vite build step, so VITE_* variables are
@@ -117,6 +123,59 @@ function createTray() {
   });
 }
 
+function createManagerWindow() {
+  const nextWindow = new BrowserWindow({
+    width: MANAGER_WINDOW_SIZE.width,
+    height: MANAGER_WINDOW_SIZE.height,
+    minWidth: 460,
+    minHeight: 560,
+    frame: true,
+    transparent: false,
+    resizable: true,
+    movable: true,
+    alwaysOnTop: false,
+    skipTaskbar: false,
+    backgroundColor: "#f7fbf5",
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  managerWindow = nextWindow;
+  nextWindow.loadFile("manager.html");
+  nextWindow.once("ready-to-show", () => {
+    if (!nextWindow.isDestroyed()) {
+      nextWindow.show();
+    }
+  });
+  nextWindow.on("closed", () => {
+    if (managerWindow === nextWindow) {
+      managerWindow = null;
+    }
+  });
+}
+
+function showManagerWindow() {
+  if (!managerWindow || managerWindow.isDestroyed()) {
+    managerWindow = null;
+    createManagerWindow();
+    return;
+  }
+
+  if (!managerWindow.isVisible()) {
+    managerWindow.show();
+  }
+
+  if (managerWindow.isMinimized()) {
+    managerWindow.restore();
+  }
+
+  managerWindow.focus();
+}
+
 function buildTrayMenu() {
   const isVisible = Boolean(mainWindow && mainWindow.isVisible());
 
@@ -124,6 +183,14 @@ function buildTrayMenu() {
     {
       label: isVisible ? "隐藏植物" : "显示植物",
       click: () => togglePlantWindow(),
+    },
+    {
+      label: "打开管理窗口",
+      click: showManagerWindow,
+    },
+    {
+      label: "更换植物形象",
+      click: showManagerWindow,
     },
     {
       label: "随机模拟一次数据",
@@ -138,7 +205,6 @@ function buildTrayMenu() {
     },
   ]);
 }
-
 function refreshTrayMenu() {
   if (tray) {
     tray.setContextMenu(buildTrayMenu());
@@ -221,6 +287,16 @@ function sendToRenderer(channel, payload) {
   mainWindow.webContents.send(channel, payload);
 }
 
+function broadcastToWindows(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+
+  if (managerWindow && !managerWindow.isDestroyed()) {
+    managerWindow.webContents.send(channel, payload);
+  }
+}
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
@@ -249,6 +325,17 @@ ipcMain.handle("plant-window:show", () => {
 ipcMain.handle("plant-window:popup-menu", () => {
   const menu = Menu.buildFromTemplate([
     {
+      label: "打开管理窗口",
+      click: showManagerWindow,
+    },
+    {
+      label: "更换植物形象",
+      click: showManagerWindow,
+    },
+    {
+      type: "separator",
+    },
+    {
       label: "隐藏植物",
       click: hidePlantWindow,
     },
@@ -268,6 +355,17 @@ ipcMain.handle("plant-window:popup-menu", () => {
   menu.popup({ window: mainWindow });
 });
 
+ipcMain.handle("manager:open", () => {
+  showManagerWindow();
+});
+
+ipcMain.on("plant-selection:set", (_event, payload) => {
+  broadcastToWindows("plant-selection:changed", payload);
+});
+
+ipcMain.on("auth:changed", (_event, payload) => {
+  broadcastToWindows("auth:changed", payload);
+});
 ipcMain.on("plant-window:set-ignore-mouse-events", (_event, shouldIgnore) => {
   if (!mainWindow || isIgnoringMouseEvents === shouldIgnore) {
     return;

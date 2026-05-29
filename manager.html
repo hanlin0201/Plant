@@ -1,0 +1,62 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>桌面小植物管理</title>
+    <link rel="stylesheet" href="./manager.css" />
+  </head>
+  <body>
+    <main class="manager-shell">
+      <header class="manager-hero">
+        <p class="eyebrow">Desktop Plant</p>
+        <h1>小植物管理</h1>
+        <p>Demo 阶段：mock 登录、本地植物选择、同步桌面小组件。</p>
+      </header>
+
+      <section class="manager-card">
+        <div class="section-heading">
+          <h2>用户登录</h2>
+          <span id="authStatus" class="status-pill">未登录</span>
+        </div>
+        <label class="field-label" for="emailInput">Email</label>
+        <div class="login-row">
+          <input id="emailInput" class="text-input" type="email" placeholder="you@example.com" />
+          <button id="loginBtn" class="primary-button" type="button">登录</button>
+        </div>
+        <div class="user-row">
+          <span id="currentUserText">当前用户：未登录</span>
+          <button id="logoutBtn" class="ghost-button" type="button">退出登录</button>
+        </div>
+        <p id="syncStatusText" class="sync-status">未登录时，植物选择只会保存到本地。</p>
+      </section>
+
+      <section class="manager-card">
+        <div class="section-heading">
+          <h2>植物形象 / 品种</h2>
+          <span id="selectedSpeciesText" class="status-pill">-</span>
+        </div>
+        <div id="speciesList" class="species-list"></div>
+      </section>
+
+      <section class="manager-card info-grid">
+        <h2>当前信息</h2>
+        <div class="info-row">
+          <span>device_id</span>
+          <strong>sensor_001</strong>
+        </div>
+        <div class="info-row">
+          <span>当前植物</span>
+          <strong id="currentPlantText">-</strong>
+        </div>
+        <div class="info-row">
+          <span>当前状态</span>
+          <strong id="currentStateText">由小组件侧读取 / 调试按钮更新</strong>
+        </div>
+        <p class="muted-note">管理窗口本阶段不单独轮询 latest-data，避免和桌面小组件重复请求。</p>
+      </section>
+    </main>
+
+    <script type="module" src="./manager.js"></script>
+  </body>
+</html>

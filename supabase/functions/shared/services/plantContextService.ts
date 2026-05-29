@@ -9,6 +9,7 @@ export interface PlantContext {
     temperature: number;
     light: number | null;
     air_humidity: number | null;
+    fertility: number | null;
     battery: number | null;
   } | null;
   created_at: string | null;
@@ -55,6 +56,7 @@ export async function getPlantContext(
       light: reading.light === null ? null : Number(reading.light),
       air_humidity:
         reading.air_humidity === null ? null : Number(reading.air_humidity),
+      fertility: reading.fertility === null ? null : Number(reading.fertility),
       battery: reading.battery === null ? null : Number(reading.battery),
     },
     created_at: reading.created_at,

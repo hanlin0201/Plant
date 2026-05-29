@@ -8,6 +8,7 @@ create table if not exists public.plant_readings (
   temperature numeric not null,
   light numeric,
   air_humidity numeric,
+  fertility numeric,
   battery numeric,
   trigger_type text not null default 'periodic',
   state text not null,

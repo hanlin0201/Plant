@@ -55,6 +55,7 @@ export function toPlantStatusResponse(reading: PlantReading): PlantStatusRespons
       temperature: Number(reading.temperature),
       light: reading.light === null ? null : Number(reading.light),
       air_humidity: reading.air_humidity === null ? null : Number(reading.air_humidity),
+      fertility: reading.fertility === null ? null : Number(reading.fertility),
       battery: reading.battery === null ? null : Number(reading.battery),
     },
     state: reading.state,

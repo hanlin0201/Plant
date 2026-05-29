@@ -16,10 +16,10 @@ const metricDefinitions = [
   { key: "battery", label: "电量", icon: "🔋" },
 ];
 
-export function buildSensorMetrics(sensorData = {}) {
+export function buildSensorMetrics(sensorData = {}, thresholdsOverride = {}) {
   const values = normalizeSensorData(sensorData);
   return metricDefinitions.map((def) => {
-    const threshold = plantThresholds[def.key];
+    const threshold = buildMetricThreshold(def.key, thresholdsOverride);
     const value = values[def.key];
     const status = getStatus(value, threshold);
     return {
@@ -31,6 +31,15 @@ export function buildSensorMetrics(sensorData = {}) {
       progress: getProgressPercent(value, threshold),
     };
   });
+}
+
+function buildMetricThreshold(key, thresholdsOverride) {
+  const baseThreshold = plantThresholds[key];
+  const overrideThreshold = thresholdsOverride?.[key];
+  return {
+    ...baseThreshold,
+    ...(overrideThreshold || {}),
+  };
 }
 
 export function normalizeSensorData(sensorData = {}) {

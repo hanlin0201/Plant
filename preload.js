@@ -25,6 +25,15 @@ contextBridge.exposeInMainWorld('plantPet', {
   setMousePassthrough(enabled) {
     ipcRenderer.send('plant-window:set-ignore-mouse-events', Boolean(enabled));
   },
+  openManagerWindow() {
+    return ipcRenderer.invoke('manager:open');
+  },
+  setPlantSelection(speciesId) {
+    ipcRenderer.send('plant-selection:set', { speciesId });
+  },
+  notifyAuthChanged(payload) {
+    ipcRenderer.send('auth:changed', payload || {});
+  },
   getRuntimeConfig() {
     const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
     const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
@@ -47,5 +56,11 @@ contextBridge.exposeInMainWorld('plantPet', {
   },
   onWindowShown(callback) {
     ipcRenderer.on('plant-window:shown', callback);
+  },
+  onPlantSelectionChanged(callback) {
+    ipcRenderer.on('plant-selection:changed', (_event, payload) => callback(payload));
+  },
+  onAuthChanged(callback) {
+    ipcRenderer.on('auth:changed', (_event, payload) => callback(payload));
   }
 });

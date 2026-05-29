@@ -79,6 +79,12 @@
             </div>
           </article>
 
+          <section class="status-section plant-species-picker">
+            <label class="section-title" for="plantSpeciesSelect">植物品种</label>
+            <select id="plantSpeciesSelect" class="plant-species-select"></select>
+            <p id="plantSpeciesDescription" class="plant-species-description"></p>
+          </section>
+
           <section class="status-section">
             <div class="section-title">传感状态</div>
             <div id="sensorGrid" class="sensor-grid"></div>
@@ -100,6 +106,8 @@
               <button class="pet-debug-btn" type="button" data-debug-action="touch">播放 touch</button>
               <button class="pet-debug-btn" type="button" data-debug-action="reward-pending">设置奖励待领取</button>
               <button class="pet-debug-btn" type="button" data-debug-action="mock-dry">模拟缺水</button>
+              <button class="pet-debug-btn" type="button" data-debug-action="mock-low-light">模拟光照不足</button>
+              <button class="pet-debug-btn" type="button" data-debug-action="mock-hot">模拟温度异常</button>
               <button class="pet-debug-btn" type="button" data-debug-action="mock-normal">模拟恢复正常</button>
             </div>
           </section>

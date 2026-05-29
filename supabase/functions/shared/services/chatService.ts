@@ -150,6 +150,7 @@ function buildPlantContextMessage(plantContext: PlantContext): string {
     `- temperature: ${sensorData.temperature}`,
     `- light: ${sensorData.light ?? "unknown"}`,
     `- air_humidity: ${sensorData.air_humidity ?? "unknown"}`,
+    `- fertility: ${sensorData.fertility ?? "unknown"}`,
     `- battery: ${sensorData.battery ?? "unknown"}`,
     `- created_at: ${plantContext.created_at ?? "unknown"}`,
     "请把这些当作内部上下文，不要直接用技术字段名回答用户。",
