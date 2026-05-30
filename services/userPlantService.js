@@ -1,4 +1,8 @@
-﻿import { isKnownSpeciesId, DEFAULT_SPECIES_ID } from "./speciesCatalog.js";
+import {
+  DEFAULT_SPECIES_ID,
+  isKnownSpeciesId,
+  normalizeSpeciesId,
+} from "./speciesCatalog.js";
 import {
   getSelectedPlantProfile,
   getSelectedSpeciesId,
@@ -39,7 +43,9 @@ export async function upsertUserPlant({
   if (!deviceId) {
     throw new Error("缺少 deviceId，无法同步植物选择。");
   }
-  if (!isKnownSpeciesId(speciesId)) {
+
+  const normalizedSpeciesId = normalizeSpeciesId(speciesId);
+  if (!isKnownSpeciesId(normalizedSpeciesId)) {
     throw new Error(`未知植物 species_id：${speciesId}`);
   }
 
@@ -52,7 +58,7 @@ export async function upsertUserPlant({
     body: {
       user_id: userId,
       device_id: deviceId,
-      species_id: speciesId,
+      species_id: normalizedSpeciesId,
       display_name: displayName || null,
       updated_at: new Date().toISOString(),
     },
@@ -108,7 +114,8 @@ export async function loadRemoteSelectionOrFallback(userId, deviceId = DEFAULT_D
     };
   }
 
-  if (!isKnownSpeciesId(record.species_id)) {
+  const remoteSpeciesId = normalizeSpeciesId(record.species_id);
+  if (!isKnownSpeciesId(remoteSpeciesId)) {
     console.warn("[userPlantService] unknown remote species_id, fallback to default", {
       speciesId: record.species_id,
     });
@@ -121,6 +128,6 @@ export async function loadRemoteSelectionOrFallback(userId, deviceId = DEFAULT_D
     };
   }
 
-  const speciesId = setSelectedSpeciesId(record.species_id);
+  const speciesId = setSelectedSpeciesId(remoteSpeciesId);
   return { status: "remote", speciesId, record };
 }

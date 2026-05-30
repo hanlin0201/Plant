@@ -1,4 +1,4 @@
-﻿import {
+import {
   getCurrentUser,
   isLoggedIn,
   signIn,
@@ -15,6 +15,7 @@ import {
   loadRemoteSelectionOrFallback,
   upsertUserPlant,
 } from "./services/userPlantService.js";
+import { getPlantAssetCandidates } from "./services/assetResolver.js";
 
 const emailInputEl = document.querySelector("#emailInput");
 const loginBtnEl = document.querySelector("#loginBtn");
@@ -42,19 +43,40 @@ function renderSpeciesList() {
   speciesListEl.innerHTML = "";
 
   getAvailablePlantSpecies().forEach((species) => {
+    const previewSrc = getPlantPreviewSrc(species);
     const button = document.createElement("button");
     button.type = "button";
     button.className = `species-card ${species.id === selectedSpeciesId ? "selected" : ""}`;
     button.dataset.speciesId = species.id;
     button.innerHTML = `
-      <div class="species-title">
-        <span>${species.name}</span>
-        <span>${species.id === selectedSpeciesId ? "当前" : "选择"}</span>
+      <div class="species-card-content">
+        <div class="species-copy">
+          <div class="species-title">
+            <span>${species.name}</span>
+            <span>${species.id === selectedSpeciesId ? "当前" : "选择"}</span>
+          </div>
+          <p class="species-latin">${species.scientificName || ""}</p>
+          <p class="species-desc">${species.description}</p>
+        </div>
+        <div class="species-preview">
+          <img src="${previewSrc}" alt="${species.name}形象预览" loading="lazy" />
+        </div>
       </div>
-      <p class="species-desc">${species.description}</p>
     `;
+    const previewImage = button.querySelector(".species-preview img");
+    previewImage?.addEventListener("error", () => {
+      previewImage.src = getFallbackPreviewSrc();
+    }, { once: true });
     speciesListEl.appendChild(button);
   });
+}
+
+function getPlantPreviewSrc(species) {
+  return getPlantAssetCandidates(species.id, "normal")[0] || getFallbackPreviewSrc();
+}
+
+function getFallbackPreviewSrc() {
+  return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='24' fill='%23e8f5ec'/%3E%3Ctext x='48' y='58' text-anchor='middle' font-size='38'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E";
 }
 
 function renderCurrentPlant() {

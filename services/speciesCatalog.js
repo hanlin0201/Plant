@@ -1,6 +1,11 @@
-﻿export const DEFAULT_SPECIES_ID = "money_tree";
+export const DEFAULT_SPECIES_ID = "money_tree";
 
 export const SPECIES_ASSET_BASE = "species";
+
+export const LEGACY_SPECIES_ID_MAP = {
+  phalaenopsis: "stephania_erecta",
+  succulent: "oxalis_triangularis",
+};
 
 const speciesCatalog = [
   {
@@ -24,43 +29,43 @@ const speciesCatalog = [
     },
   },
   {
-    id: "phalaenopsis",
-    name: "蝴蝶兰",
-    scientificName: "Phalaenopsis aphrodite",
-    description: "喜欢柔和散射光和较高空气湿度，适合做温柔优雅的桌宠形象。",
+    id: "stephania_erecta",
+    name: "山乌龟",
+    scientificName: "Stephania erecta",
+    description: "块根圆润像小龟壳，藤蔓和叶片轻盈舒展，喜欢明亮散射光、温暖通风和不过湿的土壤。",
     thresholds: {
-      soilMoisture: { min: 35, max: 65 },
+      soilMoisture: { min: 25, max: 55 },
       temperature: { min: 18, max: 30 },
-      light: { min: 8000, max: 20000 },
-      humidity: { min: 50, max: 80 },
+      light: { min: 8000, max: 22000 },
+      humidity: { min: 45, max: 75 },
     },
     assets: {
-      normal: "species/phalaenopsis/normal.png",
-      dry: "species/phalaenopsis/dry.png",
-      lowLight: "species/phalaenopsis/low_light.png",
-      hot: "species/phalaenopsis/temperature_warning.png",
-      touch: "species/phalaenopsis/touch.png",
-      reward: "species/phalaenopsis/reward.png",
+      normal: "species/stephania_erecta/normal.png",
+      dry: "species/stephania_erecta/dry.png",
+      lowLight: "species/stephania_erecta/low_light.png",
+      hot: "species/stephania_erecta/temperature_warning.png",
+      touch: "species/stephania_erecta/touch.png",
+      reward: "species/stephania_erecta/reward.png",
     },
   },
   {
-    id: "succulent",
-    name: "多肉",
-    scientificName: "Succulent",
-    description: "耐旱、喜欢充足光照，照顾重点是避免过度浇水。",
+    id: "oxalis_triangularis",
+    name: "酢浆草",
+    scientificName: "Oxalis triangularis",
+    description: "叶片像小蝴蝶一样开合，偏爱明亮散射光和微润土壤，太晒或长期缺水时容易垂头。",
     thresholds: {
-      soilMoisture: { min: 15, max: 45 },
-      temperature: { min: 15, max: 32 },
-      light: { min: 12000, max: 40000 },
-      humidity: { min: 25, max: 60 },
+      soilMoisture: { min: 30, max: 65 },
+      temperature: { min: 15, max: 28 },
+      light: { min: 7000, max: 25000 },
+      humidity: { min: 40, max: 75 },
     },
     assets: {
-      normal: "species/succulent/normal.png",
-      dry: "species/succulent/dry.png",
-      lowLight: "species/succulent/low_light.png",
-      hot: "species/succulent/temperature_warning.png",
-      touch: "species/succulent/touch.png",
-      reward: "species/succulent/reward.png",
+      normal: "species/oxalis_triangularis/normal.png",
+      dry: "species/oxalis_triangularis/dry.png",
+      lowLight: "species/oxalis_triangularis/low_light.png",
+      hot: "species/oxalis_triangularis/temperature_warning.png",
+      touch: "species/oxalis_triangularis/touch.png",
+      reward: "species/oxalis_triangularis/reward.png",
     },
   },
 ];
@@ -70,14 +75,19 @@ export function getSpeciesCatalog() {
 }
 
 export function getSpeciesConfig(speciesId = DEFAULT_SPECIES_ID) {
+  const normalizedSpeciesId = normalizeSpeciesId(speciesId);
   const species =
-    speciesCatalog.find((item) => item.id === speciesId) ||
+    speciesCatalog.find((item) => item.id === normalizedSpeciesId) ||
     speciesCatalog.find((item) => item.id === DEFAULT_SPECIES_ID);
   return cloneSpecies(species);
 }
 
 export function isKnownSpeciesId(speciesId) {
-  return speciesCatalog.some((item) => item.id === speciesId);
+  return speciesCatalog.some((item) => item.id === normalizeSpeciesId(speciesId));
+}
+
+export function normalizeSpeciesId(speciesId) {
+  return LEGACY_SPECIES_ID_MAP[speciesId] || speciesId;
 }
 
 function cloneSpecies(species) {

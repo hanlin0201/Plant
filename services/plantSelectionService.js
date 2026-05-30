@@ -1,8 +1,9 @@
-﻿import {
+import {
   DEFAULT_SPECIES_ID,
   getSpeciesCatalog,
   getSpeciesConfig,
   isKnownSpeciesId,
+  normalizeSpeciesId,
 } from "./speciesCatalog.js";
 
 export const PLANT_SELECTION_STORAGE_KEY = "desktopPlant.selectedSpeciesId";
@@ -13,11 +14,15 @@ export function getAvailablePlantSpecies() {
 
 export function getSelectedSpeciesId(storage = window.localStorage) {
   const storedSpeciesId = safeGet(storage, PLANT_SELECTION_STORAGE_KEY);
-  return isKnownSpeciesId(storedSpeciesId) ? storedSpeciesId : DEFAULT_SPECIES_ID;
+  const normalizedSpeciesId = normalizeSpeciesId(storedSpeciesId);
+  return isKnownSpeciesId(normalizedSpeciesId) ? normalizedSpeciesId : DEFAULT_SPECIES_ID;
 }
 
 export function setSelectedSpeciesId(speciesId, storage = window.localStorage) {
-  const nextSpeciesId = isKnownSpeciesId(speciesId) ? speciesId : DEFAULT_SPECIES_ID;
+  const normalizedSpeciesId = normalizeSpeciesId(speciesId);
+  const nextSpeciesId = isKnownSpeciesId(normalizedSpeciesId)
+    ? normalizedSpeciesId
+    : DEFAULT_SPECIES_ID;
   safeSet(storage, PLANT_SELECTION_STORAGE_KEY, nextSpeciesId);
   return nextSpeciesId;
 }
